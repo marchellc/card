@@ -129,16 +129,20 @@
   }
   .card-back img { width: 200px; object-fit: contain; position: relative; z-index: 1; }
 
-  /* ===== チャットエリア ===== */
+  /* ===== チャットエリア：CTAの直上に固定オーバーレイ ===== */
   .chat-area {
-    width: 300px;
+    position: fixed;
+    left: 0; right: 0;
+    /* bottom はJSでCTAの高さ分セット */
     display: none;
     flex-direction: column;
     gap: 12px;
-    padding: 16px 0 8px;
+    padding: 16px 16px 8px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    /* 高さはJSで動的にセット */
+    /* 背景はグラデーションでカードと自然に馴染む */
+    background: linear-gradient(to bottom, transparent 0%, #111 30%);
+    z-index: 10;
   }
   .chat-area::-webkit-scrollbar { display: none; }
   .chat-area.visible { display: flex; }
@@ -232,7 +236,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.9</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.11</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -338,7 +342,6 @@
       : `${avatarHTML(false)}${bubble}${time}`;
     chatArea.appendChild(row);
 
-    // チャットエリアを最下部へスクロール
     setTimeout(() => {
       const ca = document.getElementById('chatArea');
       ca.scrollTop = ca.scrollHeight;
@@ -381,10 +384,11 @@
   function updateChatHeight() {
     const chatArea = document.getElementById('chatArea');
     const winH = window.innerHeight;
-    const ctaH = document.querySelector('.cta').getBoundingClientRect().height;
-    // 画面下部から CTAを引いた残りの40%をチャットに充てる
-    const chatH = Math.floor((winH - ctaH) * 0.48);
-    chatArea.style.maxHeight = Math.max(chatH, 140) + 'px';
+    const cta = document.querySelector('.cta');
+    const ctaH = cta.getBoundingClientRect().height;
+    const chatH = Math.floor(winH * 0.5) - ctaH;
+    chatArea.style.bottom = ctaH + 'px';
+    chatArea.style.height = Math.max(chatH, 100) + 'px';
   }
   window.addEventListener('resize', updateChatHeight);
   
