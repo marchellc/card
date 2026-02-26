@@ -698,6 +698,7 @@
     });
 
     db.ref("rooms/" + id + "/status").set({ guestJoined: true });
+    guestJoined = true; // ゲスト自身もフラグをtrueに
     showToast("チャットに参加しました！");
   }
 
