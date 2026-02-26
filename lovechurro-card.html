@@ -237,6 +237,50 @@
   .icon-btn:active { transform: scale(0.9); opacity: 0.7; }
   .send-btn  { background: rgb(250,199,202); }
   .share-btn { background: rgba(255,255,255,0.1); }
+  /* 次の質問ボタン */
+  .next-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    height: 30px;
+    padding: 0 12px;
+    border-radius: 20px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.85) translateY(-4px);
+    transition: opacity 0.4s ease, transform 0.4s ease, background 0.2s, box-shadow 0.2s;
+    pointer-events: none;
+    z-index: 10;
+    -webkit-tap-highlight-color: transparent;
+    font-family: "Noto Sans JP", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: rgba(255,255,255,0.85);
+    white-space: nowrap;
+  }
+  .next-btn.visible {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
+  }
+  .next-btn:active {
+    background: rgba(255,255,255,0.22);
+    transform: scale(0.94) translateY(0);
+  }
+  @keyframes nudge {
+    0%   { box-shadow: 0 0 0 0 rgba(250,199,202,1); }
+    100% { box-shadow: 0 0 0 40px rgba(250,199,202,0); }
+  }
+  .next-btn.nudge {
+    animation: nudge 1.4s ease-out infinite;
+    border-color: rgba(250,199,202,0.9);
+    background: rgba(250,199,202,0.2);
+  }
   /* タイピングインジケーター */
   .typing-row {
     display: flex; align-items: flex-end; gap: 8px;
@@ -295,6 +339,10 @@
           </div>
         </div>
       </div>
+      <!-- 次の質問ボタン -->
+      <button class="next-btn" id="nextBtn" title="次の質問へ">
+        Next ›
+      </button>
     </div>
   </div>
   <div class="chat-area" id="chatArea"></div>
@@ -457,6 +505,8 @@
     setTimeout(() => {
       cardFront.classList.add("revealed");
       cta.classList.add("visible");
+      // カードが固定済みなら次の質問ボタンも再表示
+      if (cardFixed) setTimeout(showNextBtn, 200);
     }, 900);
 
     // 1600ms後: スピン完了
@@ -657,6 +707,51 @@
     setTimeout(() => t.classList.remove("show"), 2500);
   }
 
+  // ===== 次の質問ボタン =====
+  const nextBtn = document.getElementById("nextBtn");
+  let idleTimer = null;
+  let nudgeTimer = null;
+
+  // カードが固定されたらボタンを表示
+  function showNextBtn() {
+    nextBtn.classList.add("visible");
+    resetIdleTimer();
+  }
+
+  // 10秒間誰も入力していなければナッジ演出
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    clearTimeout(nudgeTimer);
+    nextBtn.classList.remove("nudge");
+    idleTimer = setTimeout(() => {
+      nextBtn.classList.remove("nudge");
+      // リフローを挟んでアニメーションを再トリガー
+      void nextBtn.offsetWidth;
+      nextBtn.classList.add("nudge");
+    }, 10000);
+  }
+
+  // 入力があったらタイマーリセット
+  document.getElementById("answerInput").addEventListener("focus", resetIdleTimer);
+  document.getElementById("answerInput").addEventListener("input", resetIdleTimer);
+
+  // ボタンを押したら次の質問へ
+  nextBtn.addEventListener("click", () => {
+    if (isSpinning) return;
+    // カード固定を解除してスピン
+    cardFixed = false;
+    card.style.pointerEvents = "auto";
+    nextBtn.classList.remove("visible", "nudge");
+    clearTimeout(idleTimer);
+    // CTA非表示
+    cta.classList.remove("visible");
+    setInputDisabled(true);
+    // スピン
+    spinToTarget(1);
+    // スピン後にボタン再表示
+    setTimeout(showNextBtn, 1700);
+  });
+
   function updateChatHeight() {
     const chatArea = document.getElementById("chatArea");
     const ctaEl = document.querySelector(".cta");
@@ -712,8 +807,8 @@
     db.ref("rooms/" + roomId + "/typing/" + otherRole).on("value", snap => {
       if (snap.val() === true) {
         showTyping();
+        resetIdleTimer(); // 相手が入力中もアイドルタイマーリセット
       } else {
-        // ダミー返信中でなければhide
         hideTyping();
       }
     });
@@ -833,6 +928,7 @@
       cta.classList.add("visible");
       setInputDisabled(false);
       setTimeout(updateChatHeight, 50);
+      setTimeout(showNextBtn, 200);
     }
     const time = new Date(ts || Date.now()).toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
     const row = document.createElement("div");
