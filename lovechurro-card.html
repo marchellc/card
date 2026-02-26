@@ -7,16 +7,21 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    height: 100%;
+  }
   body {
     background: #111;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 100vh;
+    height: 100dvh;
     font-family: 'Noto Sans JP', sans-serif;
     overflow: hidden;
     user-select: none;
+    padding: 16px 0;
+    gap: 0;
   }
 
   @keyframes float {
@@ -28,15 +33,17 @@
     color: rgba(255,255,255,0.6);
     font-size: 12px;
     letter-spacing: 0.2em;
-    margin-bottom: 36px;
+    margin-bottom: 20px;
     text-transform: uppercase;
     animation: float 2.8s ease-in-out infinite;
+    flex-shrink: 0;
   }
 
   .scene {
-    width: 300px;
-    height: 480px;
+    width: min(300px, 80vw);
+    height: min(480px, 58vh);
     perspective: 1000px;
+    flex-shrink: 0;
   }
 
   .card-wrapper {
@@ -120,8 +127,8 @@
 
   /* ===== 回答エリア ===== */
   .answer-area {
-    margin-top: 20px;
-    width: 300px;
+    margin-top: 16px;
+    width: min(300px, 80vw);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -129,6 +136,7 @@
     transform: translateY(8px);
     transition: opacity 0.5s ease, transform 0.5s ease;
     pointer-events: none;
+    flex-shrink: 0;
   }
   .answer-area.visible {
     opacity: 1;
