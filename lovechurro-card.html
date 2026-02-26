@@ -243,7 +243,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.18</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.20</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -377,7 +377,7 @@
 
   document.getElementById('shareBtn').addEventListener('click', async () => {
     if (navigator.share) {
-      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.18]', url: location.href }); } catch(e){}
+      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.20]', url: location.href }); } catch(e){}
     } else {
       await navigator.clipboard.writeText(location.href);
       showToast('URLをコピーしました！');
@@ -418,14 +418,22 @@
   // 最初は入力不可
   setInputDisabled(true);
 
-  // ページ読み込み後にカードがクルッ×2とするヒントアニメーション
-  setTimeout(() => {
+  // カードが回されるまで、クルッ×2を最大5回繰り返すヒントアニメーション
+  let peekCount = 0;
+  const maxPeek = 5;
+  function playPeek() {
+    if (cardFixed || peekCount >= maxPeek) return;
+    peekCount++;
     card.style.animation = 'cardPeek 1.4s ease-in-out';
     card.addEventListener('animationend', () => {
       card.style.animation = '';
       card.style.transform = 'rotateY(180deg)';
+      if (!cardFixed && peekCount < maxPeek) {
+        setTimeout(playPeek, 800);
+      }
     }, { once: true });
-  }, 800);
+  }
+  setTimeout(playPeek, 800);
 
   function spinToTarget(dir) {
     isSpinning = true;
