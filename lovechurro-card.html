@@ -339,7 +339,7 @@
 </style>
 </head>
 <body>
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.44</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.45</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -567,7 +567,7 @@
     card.classList.add("dragging");
     setCardTransition("none");
     setCardTransform(`rotateY(${currentRotation}deg)`);
-    if (!cardFixed) {
+    if (!questionShown) {
       cardFront.classList.remove("revealed");
       setInputDisabled(true);
     }
@@ -594,12 +594,14 @@
     } else {
       setCardTransition("transform 0.6s cubic-bezier(0.23,1,0.32,1)");
       setCardTransform(`rotateY(${currentRotation}deg)`);
-      if (!cardFixed) setInputDisabled(false);
-      else {
-        // cardFixed中はtap→戻したのでrevealed復元
+      if (questionShown) {
+        // 質問表示中のtap→戻し: revealed & Nextを復元
         cardFront.classList.add("revealed");
         nextBtnWrap.classList.add("visible");
         resetIdleTimer();
+        if (!cardFixed) setInputDisabled(false);
+      } else {
+        setInputDisabled(false);
       }
     }
     currentX = 0;
@@ -614,7 +616,7 @@
     card.classList.add("dragging");
     setCardTransition("none");
     setCardTransform(`rotateY(${currentRotation}deg)`);
-    if (!cardFixed) {
+    if (!questionShown) {
       cardFront.classList.remove("revealed");
       setInputDisabled(true);
     }
