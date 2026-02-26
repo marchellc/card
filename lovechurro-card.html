@@ -251,7 +251,7 @@
 </style>
 </head>
 <body>
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.29</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.30</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -620,11 +620,22 @@
   });
 
   document.getElementById("shareBtn").addEventListener("click", async () => {
-    if (navigator.share) {
-      try { await navigator.share({ title:"LOVE CHURRO カード", text:"会話が弾むカードゲーム", url: location.href }); } catch(e){}
+    if (roomId) {
+      // ルームが存在する場合は招待リンクをシェア
+      const inviteUrl = location.origin + location.pathname + "?room=" + roomId;
+      if (navigator.share) {
+        try { await navigator.share({ title:"LOVE CHURRO", text:"一緒に答えてみて！", url: inviteUrl }); } catch(e){}
+      } else {
+        await navigator.clipboard.writeText(inviteUrl);
+        showToast("招待リンクをコピーしました！");
+      }
     } else {
-      await navigator.clipboard.writeText(location.href);
-      showToast("URLをコピーしました！");
+      if (navigator.share) {
+        try { await navigator.share({ title:"LOVE CHURRO カード", text:"会話が弾むカードゲーム", url: location.href }); } catch(e){}
+      } else {
+        await navigator.clipboard.writeText(location.href);
+        showToast("URLをコピーしました！");
+      }
     }
   });
 
@@ -643,6 +654,163 @@
   }
   window.addEventListener("resize", updateChatHeight);
   window.addEventListener("load", updateChatHeight);
+
+  // ===== Firebase リアルタイム同期 =====
+  // Firebase設定
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgSjx0IZMf7GX2CYT1nDH-XKxuqqeeg6Y",
+    authDomain: "lovechurro-card.firebaseapp.com",
+    databaseURL: "https://lovechurro-card-default-rtdb.firebaseio.com",
+    projectId: "lovechurro-card",
+    storageBucket: "lovechurro-card.firebasestorage.app",
+    messagingSenderId: "649173943646",
+    appId: "1:649173943646:web:ffaff2b557af4a4b4afbcf",
+    measurementId: "G-V2267DZ39P"
+  };
+
+  // Firebase CDN (compat版 - scriptタグで使える)
+  // ※ initAppはCDNロード後に呼ぶ
+  let db = null;
+  let roomId = null;
+  let myRole = null; // "host" or "guest"
+  let messagesRef = null;
+
+  function generateRoomId() {
+    return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  function initFirebase() {
+    if (typeof firebase === "undefined") return;
+    firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
+
+    // URLにroomパラメータがあればゲストとして参加
+    const params = new URLSearchParams(location.search);
+    const roomParam = params.get("room");
+    if (roomParam) {
+      joinRoom(roomParam);
+    }
+  }
+
+  // ホストとしてルームを作成（初回メッセージ送信時）
+  function createRoom() {
+    if (!db || roomId) return;
+    roomId = generateRoomId();
+    myRole = "host";
+    messagesRef = db.ref("rooms/" + roomId + "/messages");
+    listenMessages();
+    showToast("ルーム作成！友達に招待リンクを送ろう");
+  }
+
+  // ゲストとしてルームに参加
+  function joinRoom(id) {
+    if (!db) return;
+    roomId = id;
+    myRole = "guest";
+    messagesRef = db.ref("rooms/" + id + "/messages");
+
+    // 既存メッセージを取得して表示
+    messagesRef.once("value", snapshot => {
+      const data = snapshot.val();
+      if (data) {
+        Object.values(data).sort((a,b) => a.ts - b.ts).forEach(msg => {
+          addMessageLocal(msg.isMe ? "host" === myRole : "host" !== myRole, msg.text, msg.ts);
+        });
+      }
+      listenMessages();
+    });
+
+    // ゲスト参加通知
+    db.ref("rooms/" + id + "/status").set({ guestJoined: true });
+    showToast("チャットに参加しました！");
+  }
+
+  // メッセージをFirebaseに保存
+  function sendMessageToFirebase(text) {
+    if (!db) { createRoom(); }
+    if (!messagesRef) {
+      roomId = generateRoomId();
+      myRole = "host";
+      messagesRef = db.ref("rooms/" + roomId + "/messages");
+      listenMessages();
+    }
+    const msg = { role: myRole, text: text, ts: Date.now(), isMe: true };
+    messagesRef.push(msg);
+  }
+
+  // メッセージリスナー（相手のメッセージを受信）
+  function listenMessages() {
+    if (!messagesRef) return;
+    messagesRef.on("child_added", snapshot => {
+      const msg = snapshot.val();
+      // 自分のメッセージは既にaddMessageLocalで表示済み → スキップ
+      if (msg.role === myRole) return;
+      addMessageLocal(false, msg.text, msg.ts);
+    });
+  }
+
+  // UI にメッセージを表示（Firebase経由の受信用）
+  function addMessageLocal(isMe, text, ts) {
+    const chatArea = document.getElementById("chatArea");
+    chatArea.classList.add("visible");
+    if (!cardFixed) {
+      cardFixed = true;
+      card.style.transition = "none";
+      card.style.transform = "rotateY(180deg)";
+      currentRotation = 180;
+      card.style.pointerEvents = "none";
+      cardFront.classList.add("revealed");
+      const targets = cardFront.querySelectorAll(".question-ja, .question-en, .brand");
+      targets.forEach(el => { el.style.transition = "none"; el.style.opacity = "1"; el.style.transform = "translateY(0)"; });
+      document.querySelector(".hint").style.display = "none";
+      document.querySelector(".sub-hint").style.display = "none";
+      document.getElementById("cardSection").style.minHeight = "auto";
+      document.getElementById("cardSection").style.paddingTop = "12px";
+      setTimeout(updateChatHeight, 50);
+    }
+    const time = new Date(ts || Date.now()).toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
+    const row = document.createElement("div");
+    row.className = "msg-row " + (isMe ? "me" : "other");
+    const bubble = `<div class="bubble">${text}</div>`;
+    const timeEl = `<div class="msg-time">${time}</div>`;
+    row.innerHTML = isMe ? `${timeEl}${bubble}${avatarHTML(true)}` : `${avatarHTML(false)}${bubble}${timeEl}`;
+    chatArea.appendChild(row);
+    setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50);
+  }
+
+  // addMessage を上書き: Firebaseがあればそちら経由、なければローカル動作
+  const _origAddMessage = addMessage;
+  function addMessage(isMe, text) {
+    addMessageLocal(isMe, text, Date.now());
+    if (isMe && db) {
+      sendMessageToFirebase(text);
+      // ダミー返信は Firebase未接続時のみ
+    } else if (isMe && !db) {
+      if (dummyIndex < dummyReplies.length) {
+        const reply = dummyReplies[dummyIndex++];
+        setTimeout(() => addMessageLocal(false, reply, Date.now()), 1400);
+      }
+    }
+  }
+
+  // ゲスト参加通知を監視してトースト表示
+  function watchGuestJoin() {
+    if (!db || !roomId || myRole !== "host") return;
+    db.ref("rooms/" + roomId + "/status").on("value", snap => {
+      if (snap.val()?.guestJoined) showToast("友達が参加しました！");
+    });
+  }
+
+  // Firebase SDKをCDNからロード
+  const fbScript1 = document.createElement("script");
+  fbScript1.src = "https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js";
+  fbScript1.onload = () => {
+    const fbScript2 = document.createElement("script");
+    fbScript2.src = "https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js";
+    fbScript2.onload = () => { initFirebase(); };
+    document.head.appendChild(fbScript2);
+  };
+  document.head.appendChild(fbScript1);
 </script>
 </body>
 </html>
