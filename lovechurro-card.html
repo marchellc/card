@@ -243,7 +243,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.20</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.24</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -306,14 +306,53 @@
   let cardFixed = false;
   let isSpinning = false;
 
+  // 質問リスト（5問ループ）
+  const questions = [
+    { num: '1', ja: 'この1年で<br>一番頑張ったことは？', en: 'What was the most challenging thing<br>you accomplished in the past year?' },
+    { num: '2', ja: '次にやって<br>みたいことは？', en: 'What is something you want<br>to try next?' },
+    { num: '3', ja: '今週末<br>どこ行きたい？', en: 'Where do you want to go<br>this weekend?' },
+    { num: '4', ja: '今、欲しいものは？', en: 'What do you want right now?' },
+    { num: '5', ja: '相手のどこが好き？', en: 'What do you like most<br>about the other person?' },
+  ];
+  let currentQuestion = 0;
+  let questionAnswered = false;
+  let questionShown = false; // 質問が一度でも表示されたか
+
+  function setQuestion(idx) {
+    const q = questions[idx];
+    document.querySelector('.card-front .number').textContent = q.num;
+    document.querySelector('.card-front .question-ja').innerHTML = q.ja;
+    document.querySelector('.card-front .question-en').innerHTML = q.en;
+  }
+
   function avatarHTML(isMe) {
-    const fill = isMe ? '#333' : 'rgba(255,255,255,0.7)';
-    return `<div class="avatar ${isMe ? 'me-avatar' : ''}">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="8" r="4" fill="${fill}"/>
-        <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" fill="${fill}"/>
-      </svg>
-    </div>`;
+    if (isMe) {
+      // 自分アイコン：ピンク系の女性風
+      const svg = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="15" fill="#F9C5CB"/>
+        <ellipse cx="15" cy="13" rx="5.5" ry="6" fill="#F4A7B0"/>
+        <circle cx="15" cy="11.5" rx="4" ry="4.5" fill="#FFDDE1"/>
+        <ellipse cx="12.5" cy="12" rx="0.8" ry="1" fill="#333"/>
+        <ellipse cx="17.5" cy="12" rx="0.8" ry="1" fill="#333"/>
+        <path d="M13 14.5 Q15 16 17 14.5" stroke="#E07080" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+        <ellipse cx="15" cy="22" rx="7" ry="5" fill="#F4A7B0"/>
+        <path d="M11 10 Q12 7 15 7 Q18 7 19 10" fill="#8B4F3A"/>
+      </svg>`;
+      return `<div class="avatar me-avatar">${svg}</div>`;
+    } else {
+      // 相手アイコン：ブルー系の男性風
+      const svg = `<svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="15" cy="15" r="15" fill="#A8C8F0"/>
+        <ellipse cx="15" cy="13" rx="5.5" ry="6" fill="#7EB3E8"/>
+        <circle cx="15" cy="11.5" rx="4" ry="4.5" fill="#D6E8F9"/>
+        <ellipse cx="12.5" cy="12" rx="0.8" ry="1" fill="#333"/>
+        <ellipse cx="17.5" cy="12" rx="0.8" ry="1" fill="#333"/>
+        <path d="M13 14.5 Q15 16 17 14.5" stroke="#5A8AC0" stroke-width="0.8" stroke-linecap="round" fill="none"/>
+        <ellipse cx="15" cy="22" rx="7" ry="5" fill="#7EB3E8"/>
+        <path d="M11 9.5 Q13 8 15 8.5 Q17 8 19 9.5" fill="#4A3728" stroke="#4A3728" stroke-width="0.5"/>
+      </svg>`;
+      return `<div class="avatar">${svg}</div>`;
+    }
   }
 
   function addMessage(isMe, text) {
@@ -369,6 +408,7 @@
     const val = input.value.trim();
     if (!val) return;
     input.value = '';
+    questionAnswered = true; // 回答済みフラグ
     addMessage(true, val);
   });
   document.getElementById('answerInput').addEventListener('keydown', e => {
@@ -377,7 +417,7 @@
 
   document.getElementById('shareBtn').addEventListener('click', async () => {
     if (navigator.share) {
-      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.20]', url: location.href }); } catch(e){}
+      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.24]', url: location.href }); } catch(e){}
     } else {
       await navigator.clipboard.writeText(location.href);
       showToast('URLをコピーしました！');
@@ -438,6 +478,16 @@
   function spinToTarget(dir) {
     isSpinning = true;
     setInputDisabled(true);
+
+    // 質問が一度表示されていたら次へ進む
+    if (questionShown) {
+      currentQuestion = (currentQuestion + 1) % questions.length;
+    }
+    questionShown = true;
+    questionAnswered = false;
+    cardFront.classList.remove('revealed');
+    setQuestion(currentQuestion);
+
     const target = Math.round((currentRotation + (dir > 0 ? 720 : -720)) / 360) * 360;
     card.style.transition = 'transform 1.4s cubic-bezier(0.23,1,0.32,1)';
     card.style.transform = `rotateY(${target}deg)`;
