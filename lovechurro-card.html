@@ -72,16 +72,17 @@
     width: 100%; height: 100%;
     position: relative;
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
     cursor: grab;
-    /* ★ 初期transform: rotateY(0deg) → 裏面表示 */
     transform: rotateY(0deg);
-    /* ★ transitionはJSで動的に設定する。ここでは設定しない */
+    -webkit-transform: rotateY(0deg);
   }
   .card-wrapper.dragging { cursor: grabbing; }
   .card-face {
     position: absolute; width: 100%; height: 100%;
     border-radius: 20px;
     backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    -webkit-transform: translateZ(0);
     overflow: hidden;
     box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   }
@@ -89,6 +90,7 @@
   .card-front {
     background: #fff;
     transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
   }
   .card-front .pink-blob {
     position: absolute; top: 0; left: 0;
@@ -127,6 +129,7 @@
   .card-back {
     background: rgb(250,199,202);
     transform: rotateY(0deg);
+    -webkit-transform: rotateY(0deg);
     display: flex; align-items: center; justify-content: center;
   }
   .card-back .back-pattern {
@@ -530,6 +533,9 @@
       setTimeout(showNextBtn, 200);
     }, 900);
 
+    // スピンをFirebaseに送信
+    broadcastSpin(currentQuestion);
+
     // 1600ms後: スピン完了
     setTimeout(() => {
       isSpinning = false;
@@ -828,6 +834,59 @@
     }
   }
 
+  // ★ スピンイベントをFirebaseに送信
+  function broadcastSpin(questionIdx) {
+    if (!db || !roomId) return;
+    db.ref("rooms/" + roomId + "/spin").set({
+      questionIdx: questionIdx,
+      ts: Date.now(),
+      by: myRole
+    });
+  }
+
+  // ★ 相手のスピンを受信してカードを回す
+  function watchSpin() {
+    if (!db || !roomId) return;
+    db.ref("rooms/" + roomId + "/spin").on("value", snap => {
+      const data = snap.val();
+      if (!data) return;
+      if (data.by === myRole) return; // 自分が回したものはスキップ
+      // 相手が回した → カードを同期
+      if (!isSpinning) {
+        // 質問を直接セット（スピンアニメーション付き）
+        spinForGuest(data.questionIdx);
+      }
+    });
+  }
+
+  // ゲスト側でスピンアニメーションを再生
+  function spinForGuest(questionIdx) {
+    if (isSpinning) return;
+    isSpinning = true;
+    nextBtnWrap.classList.remove("visible", "nudge");
+    clearTimeout(idleTimer);
+
+    cardFront.classList.remove("revealed");
+    setQuestion(questionIdx);
+    setInputDisabled(true);
+
+    const finalTarget = currentRotation + 540; // 1.5回転して表面へ
+    card.style.transition = "transform 1.6s cubic-bezier(0.16,1,0.3,1)";
+    card.style.transform = `rotateY(${finalTarget}deg)`;
+    currentRotation = finalTarget;
+
+    setTimeout(() => {
+      cardFront.classList.add("revealed");
+      cta.classList.add("visible");
+      setTimeout(showNextBtn, 200);
+    }, 900);
+
+    setTimeout(() => {
+      isSpinning = false;
+      setInputDisabled(false);
+    }, 1600);
+  }
+
   // 相手の入力中ステータスを監視
   function watchTyping() {
     if (!db || !roomId) return;
@@ -851,6 +910,7 @@
     listenMessages();
     watchGuestJoin();
     setTimeout(watchTyping, 500);
+    setTimeout(watchSpin, 500);
   }
 
   // ゲストとしてルームに参加
@@ -875,6 +935,7 @@
     db.ref("rooms/" + id + "/status").set({ guestJoined: true });
     guestJoined = true; // ゲスト自身もフラグをtrueに
     setTimeout(watchTyping, 500);
+    setTimeout(watchSpin, 500);
     showToast("チャットに参加しました！");
   }
 
