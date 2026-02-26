@@ -45,6 +45,14 @@
     50%  { transform: translateY(-8px); opacity: 1; }
     100% { transform: translateY(0px); opacity: 0.5; }
   }
+  @keyframes cardPeek {
+    0%   { transform: rotateY(180deg); }
+    20%  { transform: rotateY(170deg); }
+    40%  { transform: rotateY(180deg); }
+    60%  { transform: rotateY(170deg); }
+    80%  { transform: rotateY(180deg); }
+    100% { transform: rotateY(180deg); }
+  }
   .hint {
     color: rgba(255,255,255,0.6);
     font-size: 12px;
@@ -235,7 +243,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.16</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.18</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -369,7 +377,7 @@
 
   document.getElementById('shareBtn').addEventListener('click', async () => {
     if (navigator.share) {
-      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？', url: location.href }); } catch(e){}
+      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.18]', url: location.href }); } catch(e){}
     } else {
       await navigator.clipboard.writeText(location.href);
       showToast('URLをコピーしました！');
@@ -388,7 +396,7 @@
     const cta = document.querySelector('.cta');
     const ctaH = cta.offsetHeight;
     chatArea.style.bottom = ctaH + 'px';
-    chatArea.style.height = '300px';
+    chatArea.style.height = '360px';
   }
   window.addEventListener('resize', updateChatHeight);
   window.addEventListener('load', updateChatHeight);
@@ -410,6 +418,15 @@
   // 最初は入力不可
   setInputDisabled(true);
 
+  // ページ読み込み後にカードがクルッ×2とするヒントアニメーション
+  setTimeout(() => {
+    card.style.animation = 'cardPeek 1.4s ease-in-out';
+    card.addEventListener('animationend', () => {
+      card.style.animation = '';
+      card.style.transform = 'rotateY(180deg)';
+    }, { once: true });
+  }, 800);
+
   function spinToTarget(dir) {
     isSpinning = true;
     setInputDisabled(true);
@@ -417,10 +434,10 @@
     card.style.transition = 'transform 1.4s cubic-bezier(0.23,1,0.32,1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
-    // カードが止まる直前（800ms）に質問テキストを表示
+    // カードが止まった直後に質問テキストを表示
     setTimeout(() => {
       cardFront.classList.add('revealed');
-    }, 800);
+    }, 1300);
     setTimeout(() => {
       isSpinning = false;
       setInputDisabled(false);
@@ -428,7 +445,7 @@
   }
 
   card.addEventListener('touchstart', e => {
-    if (cardFixed) return;
+    if (cardFixed || card.style.animation) return;
     startX = e.touches[0].clientX; isDragging = true;
     card.classList.add('dragging'); card.style.transition = 'none';
     cardFront.classList.remove('revealed');
