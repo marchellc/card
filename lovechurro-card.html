@@ -203,10 +203,14 @@
     display: flex; align-items: center; justify-content: center; gap: 6px;
     z-index: 50;
     transform: translateY(100%);
-    transition: transform 0.4s cubic-bezier(0.23,1,0.32,1);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.23,1,0.32,1), opacity 0.45s ease;
+    pointer-events: none;
   }
   .cta.visible {
     transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
   }
   .answer-input {
     flex: 1; min-width: 0; max-width: 320px;
@@ -248,7 +252,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.25</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.27</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -422,7 +426,7 @@
 
   document.getElementById('shareBtn').addEventListener('click', async () => {
     if (navigator.share) {
-      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.25]', url: location.href }); } catch(e){}
+      try { await navigator.share({ title:'LOVE CHURRO カード', text:'この1年で一番頑張ったことは？ [ver.27]', url: location.href }); } catch(e){}
     } else {
       await navigator.clipboard.writeText(location.href);
       showToast('URLをコピーしました！');
@@ -439,7 +443,8 @@
   function updateChatHeight() {
     const chatArea = document.getElementById('chatArea');
     const cta = document.querySelector('.cta');
-    const ctaH = cta.offsetHeight;
+    // CTA が非表示でも実際の高さを取得するため一時的に visibility で計測
+    const ctaH = cta.offsetHeight || 70;
     chatArea.style.bottom = ctaH + 'px';
     chatArea.style.height = '360px';
   }
@@ -493,12 +498,12 @@
     cardFront.classList.remove('revealed');
     setQuestion(currentQuestion);
 
-    // 表面（front）に止まるターゲットを計算
-    // 表面 = 0,360,720,... / 裏面 = 180,540,900,...
-    // currentRotation から次の「表面」角度へ2回転分進む
-    const spins = dir > 0 ? 2 : -2; // 2回転
-    const base = Math.round(currentRotation / 360) * 360; // 直近の360倍数
-    const target = base + spins * 360;
+    // 表面 = 180, 540, 900... （180 + 360n）
+    // 裏面 = 0, 360, 720... （360n）
+    // 現在地から±2回転後、最も近い「表面」角度へスナップ
+    const moved = currentRotation + (dir > 0 ? 720 : -720);
+    // 表面角度 = Math.round((moved - 180) / 360) * 360 + 180
+    const target = Math.round((moved - 180) / 360) * 360 + 180;
     card.style.transition = 'transform 1.4s cubic-bezier(0.23,1,0.32,1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
@@ -517,7 +522,9 @@
   card.addEventListener('touchstart', e => {
     if (cardFixed || card.style.animation) return;
     startX = e.touches[0].clientX; isDragging = true;
-    card.classList.add('dragging'); card.style.transition = 'none';
+    card.classList.add('dragging');
+    card.style.transition = 'none';
+    card.style.transform = `rotateY(${currentRotation}deg)`;
     cardFront.classList.remove('revealed');
     setInputDisabled(true);
   }, { passive: true });
@@ -538,7 +545,9 @@
   card.addEventListener('mousedown', e => {
     if (cardFixed) return;
     startX = e.clientX; isDragging = true;
-    card.classList.add('dragging'); card.style.transition = 'none';
+    card.classList.add('dragging');
+    card.style.transition = 'none';
+    card.style.transform = `rotateY(${currentRotation}deg)`;
     cardFront.classList.remove('revealed');
     setInputDisabled(true);
     e.preventDefault();
