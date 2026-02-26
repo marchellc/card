@@ -45,7 +45,6 @@
     position: relative;
     transform-style: preserve-3d;
     cursor: grab;
-    /* 裏面スタート */
     transform: rotateY(180deg);
   }
   .card-wrapper.dragging { cursor: grabbing; }
@@ -78,8 +77,6 @@
     color: #fff;
     line-height: 1;
   }
-
-  /* 質問テキストは最初非表示 → 表面に来たときにフェードイン */
   .card-front .question-ja,
   .card-front .question-en,
   .card-front .brand {
@@ -87,68 +84,114 @@
     transform: translateY(12px);
     transition: opacity 0.5s ease, transform 0.5s ease;
   }
-  .card-front.revealed .question-ja {
-    opacity: 1; transform: translateY(0);
-    transition-delay: 0.1s;
-  }
-  .card-front.revealed .question-en {
-    opacity: 1; transform: translateY(0);
-    transition-delay: 0.25s;
-  }
-  .card-front.revealed .brand {
-    opacity: 1; transform: translateY(0);
-    transition-delay: 0.4s;
-  }
+  .card-front.revealed .question-ja  { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+  .card-front.revealed .question-en  { opacity: 1; transform: translateY(0); transition-delay: 0.25s; }
+  .card-front.revealed .brand        { opacity: 1; transform: translateY(0); transition-delay: 0.4s; }
 
   .card-front .question-ja {
     position: absolute;
     top: 220px; left: 28px; right: 28px;
-    font-size: 22px;
-    font-weight: 700;
-    color: #111;
-    line-height: 1.5;
+    font-size: 22px; font-weight: 700; color: #111; line-height: 1.5;
   }
   .card-front .question-en {
     position: absolute;
     top: 310px; left: 28px; right: 28px;
-    font-size: 13px;
-    color: #555;
-    line-height: 1.7;
+    font-size: 13px; color: #555; line-height: 1.7;
   }
   .card-front .brand {
     position: absolute;
     bottom: 20px; left: 0; right: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 0 28px;
+    display: flex; justify-content: center; align-items: center; padding: 0 28px;
   }
-  .card-front .brand img {
-    width: 180px;
-    object-fit: contain;
-  }
+  .card-front .brand img { width: 180px; object-fit: contain; }
 
   /* ===== BACK ===== */
   .card-back {
     background: rgb(250, 199, 202);
     transform: rotateY(180deg);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
   }
   .card-back .back-pattern {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
     background-image: radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px);
-    background-size: 20px 20px;
-    border-radius: 20px;
+    background-size: 20px 20px; border-radius: 20px;
   }
-  .card-back img {
-    width: 200px;
-    object-fit: contain;
-    position: relative;
-    z-index: 1;
+  .card-back img { width: 200px; object-fit: contain; position: relative; z-index: 1; }
+
+  /* ===== 回答エリア ===== */
+  .answer-area {
+    margin-top: 20px;
+    width: 300px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+  }
+  .answer-area.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .answer-input {
+    flex: 1;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 24px;
+    padding: 12px 18px;
+    color: #fff;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    outline: none;
+    user-select: text;
+    transition: border-color 0.2s;
+  }
+  .answer-input::placeholder { color: rgba(255,255,255,0.3); }
+  .answer-input:focus { border-color: rgb(250,199,202); }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.15s, opacity 0.15s;
+  }
+  .icon-btn:active { transform: scale(0.9); opacity: 0.7; }
+
+  .send-btn {
+    background: rgb(250, 199, 202);
+  }
+  .send-btn svg { color: #333; }
+
+  .share-btn {
+    background: rgba(255,255,255,0.1);
+  }
+  .share-btn svg { color: #fff; }
+
+  /* トースト */
+  .toast {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    opacity: 0;
+    transition: opacity 0.3s, transform 0.3s;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 </style>
 </head>
@@ -172,45 +215,95 @@
   </div>
 </div>
 
+<!-- 回答エリア -->
+<div class="answer-area" id="answerArea">
+  <input class="answer-input" id="answerInput" type="text" placeholder="回答を入力…">
+  <button class="icon-btn send-btn" id="sendBtn" title="送信">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"></line>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+    </svg>
+  </button>
+  <button class="icon-btn share-btn" id="shareBtn" title="共有">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="18" cy="5" r="3"></circle>
+      <circle cx="6" cy="12" r="3"></circle>
+      <circle cx="18" cy="19" r="3"></circle>
+      <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+      <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+    </svg>
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+
 <script>
   const card = document.getElementById('card');
   const cardFront = document.getElementById('cardFront');
+  const answerArea = document.getElementById('answerArea');
+  const answerInput = document.getElementById('answerInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const toast = document.getElementById('toast');
 
-  let startX = 0;
-  let currentX = 0;
-  let isDragging = false;
-  // 裏面スタートなので初期回転は180度
+  let startX = 0, currentX = 0, isDragging = false;
   let currentRotation = 180;
 
-  function isShowingFront(deg) {
-    // 360で割った余りが0〜90 or 270〜360なら表面
-    const mod = ((deg % 360) + 360) % 360;
-    return mod < 90 || mod > 270;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
   }
 
   function spinToTarget(direction) {
     const spins = 2;
     const delta = direction > 0 ? 360 * spins : -360 * spins;
-    // 表面（0, 360, 720...）に揃える
-    const raw = currentRotation + delta;
-    const target = Math.round(raw / 360) * 360;
-
+    const target = Math.round((currentRotation + delta) / 360) * 360;
     card.style.transition = 'transform 1.4s cubic-bezier(0.23, 1, 0.32, 1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
-
-    // 表面に着地したらテキストをフェードイン
     setTimeout(() => {
       cardFront.classList.add('revealed');
+      answerArea.classList.add('visible');
     }, 600);
   }
 
+  // 送信ボタン
+  sendBtn.addEventListener('click', () => {
+    const val = answerInput.value.trim();
+    if (!val) return;
+    showToast('送信しました！');
+    answerInput.value = '';
+  });
+
+  // Enterキーでも送信
+  answerInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') sendBtn.click();
+  });
+
+  // 共有ボタン
+  shareBtn.addEventListener('click', async () => {
+    const shareData = {
+      title: 'LOVE CHURRO カード',
+      text: 'この1年で一番頑張ったことは？',
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch(e) {}
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast('URLをコピーしました！');
+    }
+  });
+
+  // スワイプ
   card.addEventListener('touchstart', e => {
-    startX = e.touches[0].clientX;
-    isDragging = true;
-    card.classList.add('dragging');
-    card.style.transition = 'none';
+    startX = e.touches[0].clientX; isDragging = true;
+    card.classList.add('dragging'); card.style.transition = 'none';
     cardFront.classList.remove('revealed');
+    answerArea.classList.remove('visible');
   }, { passive: true });
 
   card.addEventListener('touchmove', e => {
@@ -221,23 +314,18 @@
 
   card.addEventListener('touchend', () => {
     if (!isDragging) return;
-    isDragging = false;
-    card.classList.remove('dragging');
-    if (Math.abs(currentX) > 40) {
-      spinToTarget(currentX);
-    } else {
-      card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
-      card.style.transform = `rotateY(${currentRotation}deg)`;
-    }
+    isDragging = false; card.classList.remove('dragging');
+    if (Math.abs(currentX) > 40) spinToTarget(currentX);
+    else { card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; card.style.transform = `rotateY(${currentRotation}deg)`; }
     currentX = 0;
   });
 
   card.addEventListener('mousedown', e => {
-    startX = e.clientX;
-    isDragging = true;
-    card.classList.add('dragging');
-    card.style.transition = 'none';
+    startX = e.clientX; isDragging = true;
+    card.classList.add('dragging'); card.style.transition = 'none';
     cardFront.classList.remove('revealed');
+    answerArea.classList.remove('visible');
+    e.preventDefault();
   });
 
   window.addEventListener('mousemove', e => {
@@ -248,16 +336,32 @@
 
   window.addEventListener('mouseup', () => {
     if (!isDragging) return;
-    isDragging = false;
-    card.classList.remove('dragging');
-    if (Math.abs(currentX) > 40) {
-      spinToTarget(currentX);
-    } else {
-      card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
-      card.style.transform = `rotateY(${currentRotation}deg)`;
-    }
+    isDragging = false; card.classList.remove('dragging');
+    if (Math.abs(currentX) > 40) spinToTarget(currentX);
+    else { card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)'; card.style.transform = `rotateY(${currentRotation}deg)`; }
     currentX = 0;
   });
+
+  // Macトラックパッドの横スワイプ対応
+  let wheelTimer = null;
+  let wheelDelta = 0;
+  card.addEventListener('wheel', e => {
+    e.preventDefault();
+    wheelDelta += e.deltaX;
+    card.style.transition = 'none';
+    cardFront.classList.remove('revealed');
+    answerArea.classList.remove('visible');
+    card.style.transform = `rotateY(${currentRotation + wheelDelta * 0.5}deg)`;
+    clearTimeout(wheelTimer);
+    wheelTimer = setTimeout(() => {
+      if (Math.abs(wheelDelta) > 30) spinToTarget(wheelDelta);
+      else {
+        card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
+        card.style.transform = `rotateY(${currentRotation}deg)`;
+      }
+      wheelDelta = 0;
+    }, 200);
+  }, { passive: false });
 </script>
 </body>
 </html>
