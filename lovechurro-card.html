@@ -86,14 +86,14 @@
   .card-front { background: #fff; }
   .card-front .pink-blob {
     position: absolute; top: 0; left: 0;
-    width: 100%; height: 52%;
+    width: 100%; height: 44%;
     background: rgb(250,199,202);
     border-radius: 0 0 60% 0 / 0 0 40% 0;
   }
   .card-front .number {
-    position: absolute; top: 22px; left: 28px;
+    position: absolute; top: 18px; left: 28px;
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 96px; color: #fff; line-height: 1;
+    font-size: 80px; color: #fff; line-height: 1;
   }
   .card-front .question-ja,
   .card-front .question-en,
@@ -105,15 +105,15 @@
   .card-front.revealed .question-en { opacity:1; transform:translateY(0); transition-delay:0.25s; }
   .card-front.revealed .brand       { opacity:1; transform:translateY(0); transition-delay:0.4s; }
   .card-front .question-ja {
-    position: absolute; top: 190px; left: 28px; right: 28px;
+    position: absolute; top: 168px; left: 28px; right: 28px;
     font-size: 22px; font-weight: 700; color: #111; line-height: 1.5;
   }
   .card-front .question-en {
-    position: absolute; top: 272px; left: 28px; right: 28px;
+    position: absolute; top: 248px; left: 28px; right: 28px;
     font-size: 13px; color: #555; line-height: 1.7;
   }
   .card-front .brand {
-    position: absolute; bottom: 16px; left: 0; right: 0;
+    position: absolute; bottom: 14px; left: 0; right: 0;
     display: flex; justify-content: center; align-items: center;
   }
   .card-front .brand img { width: 180px; object-fit: contain; }
@@ -232,7 +232,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.8</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.9</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -383,8 +383,8 @@
     const winH = window.innerHeight;
     const ctaH = document.querySelector('.cta').getBoundingClientRect().height;
     // 画面下部から CTAを引いた残りの40%をチャットに充てる
-    const chatH = Math.floor((winH - ctaH) * 0.4);
-    chatArea.style.maxHeight = Math.max(chatH, 120) + 'px';
+    const chatH = Math.floor((winH - ctaH) * 0.48);
+    chatArea.style.maxHeight = Math.max(chatH, 140) + 'px';
   }
   window.addEventListener('resize', updateChatHeight);
   
