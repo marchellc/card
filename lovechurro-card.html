@@ -494,6 +494,9 @@
     cardFront.classList.remove("revealed");
     setQuestion(currentQuestion);
     setInputDisabled(true);
+    // スピン中はNextボタンを隠す
+    nextBtnWrap.classList.remove("visible", "nudge");
+    clearTimeout(idleTimer);
 
     // ★ ターゲット計算
     // dir > 0: 右スワイプ(反時計)、dir < 0: 左スワイプ(時計)
@@ -553,6 +556,9 @@
     card.style.animation = "";
     isPeeking = false;
     setInputDisabled(true);
+    // スワイプ開始と同時にNextボタンを消す
+    nextBtnWrap.classList.remove("visible", "nudge");
+    clearTimeout(idleTimer);
   }, { passive: true });
 
   card.addEventListener("touchmove", e => {
@@ -588,6 +594,9 @@
     card.style.animation = "";
     isPeeking = false;
     setInputDisabled(true);
+    // スワイプ開始と同時にNextボタンを消す
+    nextBtnWrap.classList.remove("visible", "nudge");
+    clearTimeout(idleTimer);
     e.preventDefault();
   });
   window.addEventListener("mousemove", e => {
