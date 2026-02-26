@@ -19,7 +19,6 @@
     user-select: none;
   }
 
-  /* ふわふわ浮遊するヒント */
   @keyframes float {
     0%   { transform: translateY(0px); opacity: 0.5; }
     50%  { transform: translateY(-8px); opacity: 1; }
@@ -46,6 +45,8 @@
     position: relative;
     transform-style: preserve-3d;
     cursor: grab;
+    /* 裏面スタート */
+    transform: rotateY(180deg);
   }
   .card-wrapper.dragging { cursor: grabbing; }
 
@@ -77,6 +78,28 @@
     color: #fff;
     line-height: 1;
   }
+
+  /* 質問テキストは最初非表示 → 表面に来たときにフェードイン */
+  .card-front .question-ja,
+  .card-front .question-en,
+  .card-front .brand {
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+  .card-front.revealed .question-ja {
+    opacity: 1; transform: translateY(0);
+    transition-delay: 0.1s;
+  }
+  .card-front.revealed .question-en {
+    opacity: 1; transform: translateY(0);
+    transition-delay: 0.25s;
+  }
+  .card-front.revealed .brand {
+    opacity: 1; transform: translateY(0);
+    transition-delay: 0.4s;
+  }
+
   .card-front .question-ja {
     position: absolute;
     top: 220px; left: 28px; right: 28px;
@@ -135,7 +158,7 @@
 
 <div class="scene">
   <div class="card-wrapper" id="card">
-    <div class="card-face card-front">
+    <div class="card-face card-front" id="cardFront">
       <div class="pink-blob"></div>
       <div class="number">1</div>
       <div class="question-ja">この1年で<br>一番頑張ったことは？</div>
@@ -151,33 +174,43 @@
 
 <script>
   const card = document.getElementById('card');
+  const cardFront = document.getElementById('cardFront');
+
   let startX = 0;
   let currentX = 0;
   let isDragging = false;
-  let currentRotation = 0; // 現在の累積回転角度（常に360の倍数=表面）
+  // 裏面スタートなので初期回転は180度
+  let currentRotation = 180;
 
-  function getRotation() {
-    return currentRotation;
+  function isShowingFront(deg) {
+    // 360で割った余りが0〜90 or 270〜360なら表面
+    const mod = ((deg % 360) + 360) % 360;
+    return mod < 90 || mod > 270;
   }
 
-  // スワイプ完了時：くるくる回って表面（360の倍数）で止まる
-  function spinToFront(direction) {
-    // 方向に応じて2〜3回転してから表面（正面）で止まる
-    const spins = 2; // 回転数
-    const extra = direction > 0 ? 360 * spins : -360 * spins;
-    const target = Math.round((currentRotation + extra) / 360) * 360;
+  function spinToTarget(direction) {
+    const spins = 2;
+    const delta = direction > 0 ? 360 * spins : -360 * spins;
+    // 表面（0, 360, 720...）に揃える
+    const raw = currentRotation + delta;
+    const target = Math.round(raw / 360) * 360;
 
     card.style.transition = 'transform 1.4s cubic-bezier(0.23, 1, 0.32, 1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
+
+    // 表面に着地したらテキストをフェードイン
+    setTimeout(() => {
+      cardFront.classList.add('revealed');
+    }, 1200);
   }
 
-  // ドラッグ中はリアルタイムで回転
   card.addEventListener('touchstart', e => {
     startX = e.touches[0].clientX;
     isDragging = true;
     card.classList.add('dragging');
     card.style.transition = 'none';
+    cardFront.classList.remove('revealed');
   }, { passive: true });
 
   card.addEventListener('touchmove', e => {
@@ -191,9 +224,8 @@
     isDragging = false;
     card.classList.remove('dragging');
     if (Math.abs(currentX) > 40) {
-      spinToFront(currentX);
+      spinToTarget(currentX);
     } else {
-      // 少ししか動かしてなければ元に戻す
       card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
       card.style.transform = `rotateY(${currentRotation}deg)`;
     }
@@ -205,6 +237,7 @@
     isDragging = true;
     card.classList.add('dragging');
     card.style.transition = 'none';
+    cardFront.classList.remove('revealed');
   });
 
   window.addEventListener('mousemove', e => {
@@ -218,7 +251,7 @@
     isDragging = false;
     card.classList.remove('dragging');
     if (Math.abs(currentX) > 40) {
-      spinToFront(currentX);
+      spinToTarget(currentX);
     } else {
       card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
       card.style.transform = `rotateY(${currentRotation}deg)`;
