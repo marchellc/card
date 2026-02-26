@@ -581,8 +581,9 @@
     // Firebase に送信（ルームがあれば）
     if (db && messagesRef) {
       sendMessageToFirebase(val);
-    } else {
-      // Firebase未接続 or ゲストが来ていない → ダミー返信
+    }
+    // ゲストが未参加ならダミー返信（Firebaseあり・なし両方）
+    if (!guestJoined) {
       if (dummyIndex < dummyReplies.length) {
         const reply = dummyReplies[dummyIndex++];
         setTimeout(() => addMessageUI(false, reply, Date.now()), 1400);
@@ -648,6 +649,7 @@
   let roomId = null;
   let myRole = null; // "host" or "guest"
   let messagesRef = null;
+  let guestJoined = false; // ゲストが参加したかどうか
 
   function generateRoomId() {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -720,7 +722,10 @@
   function watchGuestJoin() {
     if (!db || !roomId) return;
     db.ref("rooms/" + roomId + "/status").on("value", snap => {
-      if (snap.val()?.guestJoined) showToast("友達が参加しました！");
+      if (snap.val()?.guestJoined && !guestJoined) {
+        guestJoined = true;
+        showToast("友達が参加しました！");
+      }
     });
   }
 
