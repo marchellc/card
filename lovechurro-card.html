@@ -137,8 +137,9 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px 16px 8px;
-    overflow-y: auto;
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     background: #111;
     z-index: 10;
   }
@@ -234,7 +235,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.15</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.16</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -387,7 +388,7 @@
     const cta = document.querySelector('.cta');
     const ctaH = cta.offsetHeight;
     chatArea.style.bottom = ctaH + 'px';
-    chatArea.style.height = '260px';
+    chatArea.style.height = '300px';
   }
   window.addEventListener('resize', updateChatHeight);
   window.addEventListener('load', updateChatHeight);
@@ -416,8 +417,11 @@
     card.style.transition = 'transform 1.4s cubic-bezier(0.23,1,0.32,1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
+    // カードが止まる直前（800ms）に質問テキストを表示
     setTimeout(() => {
       cardFront.classList.add('revealed');
+    }, 800);
+    setTimeout(() => {
       isSpinning = false;
       setInputDisabled(false);
     }, 1400);
