@@ -441,6 +441,8 @@
     setTimeout(() => {
       isSpinning = false;
       setInputDisabled(false);
+      // ★ 初回スピン時にルームを作成（回答前でもシェアできる）
+      if (db && !roomId) createRoom();
     }, 1600);
   }
 
@@ -566,46 +568,7 @@
     }
   }
 
-  function addMessage(isMe, text) {
-    const chatArea = document.getElementById("chatArea");
-    chatArea.classList.add("visible");
-
-    if (!cardFixed) {
-      cardFixed = true;
-      card.style.transition = "none";
-      card.style.transform = "rotateY(180deg)";
-      currentRotation = 180;
-      card.style.pointerEvents = "none";
-      cardFront.classList.add("revealed");
-      const targets = cardFront.querySelectorAll(".question-ja, .question-en, .brand");
-      targets.forEach(el => {
-        el.style.transition = "none";
-        el.style.opacity = "1";
-        el.style.transform = "translateY(0)";
-      });
-      document.querySelector(".hint").style.display = "none";
-      document.querySelector(".sub-hint").style.display = "none";
-      document.getElementById("cardSection").style.minHeight = "auto";
-      document.getElementById("cardSection").style.paddingTop = "12px";
-      setTimeout(updateChatHeight, 50);
-    }
-
-    const now = new Date().toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
-    const row = document.createElement("div");
-    row.className = "msg-row " + (isMe ? "me" : "other");
-    const bubble = `<div class="bubble">${text}</div>`;
-    const time = `<div class="msg-time">${now}</div>`;
-    row.innerHTML = isMe
-      ? `${time}${bubble}${avatarHTML(true)}`
-      : `${avatarHTML(false)}${bubble}${time}`;
-    chatArea.appendChild(row);
-    setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50);
-
-    if (isMe && dummyIndex < dummyReplies.length) {
-      const reply = dummyReplies[dummyIndex++];
-      setTimeout(() => addMessage(false, reply), 1400);
-    }
-  }
+  // addMessage → addMessageUI に統合済み
 
   document.getElementById("sendBtn").addEventListener("click", () => {
     const input = document.getElementById("answerInput");
@@ -613,7 +576,18 @@
     if (!val) return;
     input.value = "";
     questionAnswered = true;
-    addMessage(true, val);
+    // UI に即表示
+    addMessageUI(true, val, Date.now());
+    // Firebase に送信（ルームがあれば）
+    if (db && messagesRef) {
+      sendMessageToFirebase(val);
+    } else {
+      // Firebase未接続 or ゲストが来ていない → ダミー返信
+      if (dummyIndex < dummyReplies.length) {
+        const reply = dummyReplies[dummyIndex++];
+        setTimeout(() => addMessageUI(false, reply, Date.now()), 1400);
+      }
+    }
   });
   document.getElementById("answerInput").addEventListener("keydown", e => {
     if (e.key === "Enter") document.getElementById("sendBtn").click();
@@ -692,14 +666,14 @@
     }
   }
 
-  // ホストとしてルームを作成（初回メッセージ送信時）
+  // ★ カードを回したらルームを作成（回答前でもシェアできる）
   function createRoom() {
     if (!db || roomId) return;
     roomId = generateRoomId();
     myRole = "host";
     messagesRef = db.ref("rooms/" + roomId + "/messages");
     listenMessages();
-    showToast("ルーム作成！友達に招待リンクを送ろう");
+    watchGuestJoin();
   }
 
   // ゲストとしてルームに参加
@@ -714,27 +688,21 @@
       const data = snapshot.val();
       if (data) {
         Object.values(data).sort((a,b) => a.ts - b.ts).forEach(msg => {
-          addMessageLocal(msg.isMe ? "host" === myRole : "host" !== myRole, msg.text, msg.ts);
+          const isMine = (msg.role === "guest");
+          addMessageUI(isMine, msg.text, msg.ts);
         });
       }
       listenMessages();
     });
 
-    // ゲスト参加通知
     db.ref("rooms/" + id + "/status").set({ guestJoined: true });
     showToast("チャットに参加しました！");
   }
 
   // メッセージをFirebaseに保存
   function sendMessageToFirebase(text) {
-    if (!db) { createRoom(); }
-    if (!messagesRef) {
-      roomId = generateRoomId();
-      myRole = "host";
-      messagesRef = db.ref("rooms/" + roomId + "/messages");
-      listenMessages();
-    }
-    const msg = { role: myRole, text: text, ts: Date.now(), isMe: true };
+    if (!messagesRef) return;
+    const msg = { role: myRole, text: text, ts: Date.now() };
     messagesRef.push(msg);
   }
 
@@ -743,14 +711,21 @@
     if (!messagesRef) return;
     messagesRef.on("child_added", snapshot => {
       const msg = snapshot.val();
-      // 自分のメッセージは既にaddMessageLocalで表示済み → スキップ
-      if (msg.role === myRole) return;
-      addMessageLocal(false, msg.text, msg.ts);
+      if (msg.role === myRole) return; // 自分のは表示済みなのでスキップ
+      addMessageUI(false, msg.text, msg.ts);
     });
   }
 
-  // UI にメッセージを表示（Firebase経由の受信用）
-  function addMessageLocal(isMe, text, ts) {
+  // ゲスト参加通知を監視してトースト表示
+  function watchGuestJoin() {
+    if (!db || !roomId) return;
+    db.ref("rooms/" + roomId + "/status").on("value", snap => {
+      if (snap.val()?.guestJoined) showToast("友達が参加しました！");
+    });
+  }
+
+  // ★ UIにメッセージを追加する共通関数
+  function addMessageUI(isMe, text, ts) {
     const chatArea = document.getElementById("chatArea");
     chatArea.classList.add("visible");
     if (!cardFixed) {
@@ -776,29 +751,6 @@
     row.innerHTML = isMe ? `${timeEl}${bubble}${avatarHTML(true)}` : `${avatarHTML(false)}${bubble}${timeEl}`;
     chatArea.appendChild(row);
     setTimeout(() => { chatArea.scrollTop = chatArea.scrollHeight; }, 50);
-  }
-
-  // addMessage を上書き: Firebaseがあればそちら経由、なければローカル動作
-  const _origAddMessage = addMessage;
-  function addMessage(isMe, text) {
-    addMessageLocal(isMe, text, Date.now());
-    if (isMe && db) {
-      sendMessageToFirebase(text);
-      // ダミー返信は Firebase未接続時のみ
-    } else if (isMe && !db) {
-      if (dummyIndex < dummyReplies.length) {
-        const reply = dummyReplies[dummyIndex++];
-        setTimeout(() => addMessageLocal(false, reply, Date.now()), 1400);
-      }
-    }
-  }
-
-  // ゲスト参加通知を監視してトースト表示
-  function watchGuestJoin() {
-    if (!db || !roomId || myRole !== "host") return;
-    db.ref("rooms/" + roomId + "/status").on("value", snap => {
-      if (snap.val()?.guestJoined) showToast("友達が参加しました！");
-    });
   }
 
   // Firebase SDKをCDNからロード
