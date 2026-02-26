@@ -129,19 +129,17 @@
   }
   .card-back img { width: 200px; object-fit: contain; position: relative; z-index: 1; }
 
-  /* ===== チャットエリア：CTAの直上に固定オーバーレイ ===== */
+  /* ===== チャットエリア：CTAの直上に黒ベタ固定 ===== */
   .chat-area {
     position: fixed;
     left: 0; right: 0;
-    /* bottom はJSでCTAの高さ分セット */
     display: none;
     flex-direction: column;
     gap: 12px;
     padding: 16px 16px 8px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    /* 背景はグラデーションでカードと自然に馴染む */
-    background: linear-gradient(to bottom, transparent 0%, #111 30%);
+    background: #111;
     z-index: 10;
   }
   .chat-area::-webkit-scrollbar { display: none; }
@@ -236,7 +234,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.11</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.12</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -327,8 +325,11 @@
         el.style.opacity = '1';
         el.style.transform = 'translateY(0)';
       });
-      // card-section の min-height を解除してからカード縮小・チャット高さを計算
+      // SWIPEテキストを非表示・card-sectionを上部に詰める
+      document.querySelector('.hint').style.display = 'none';
+      document.querySelector('.sub-hint').style.display = 'none';
       document.getElementById('cardSection').style.minHeight = 'auto';
+      document.getElementById('cardSection').style.paddingTop = '12px';
       updateChatHeight();
     }
 
