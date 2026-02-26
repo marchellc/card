@@ -18,28 +18,37 @@
     overflow: hidden;
     user-select: none;
   }
-  .hint {
-    color: rgba(255,255,255,0.4);
-    font-size: 12px;
-    letter-spacing: 0.15em;
-    margin-bottom: 32px;
-    text-transform: uppercase;
+
+  /* ふわふわ浮遊するヒント */
+  @keyframes float {
+    0%   { transform: translateY(0px); opacity: 0.5; }
+    50%  { transform: translateY(-8px); opacity: 1; }
+    100% { transform: translateY(0px); opacity: 0.5; }
   }
+  .hint {
+    color: rgba(255,255,255,0.6);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    margin-bottom: 36px;
+    text-transform: uppercase;
+    animation: float 2.8s ease-in-out infinite;
+  }
+
   .scene {
     width: 300px;
     height: 480px;
-    perspective: 1200px;
+    perspective: 1000px;
   }
+
   .card-wrapper {
     width: 100%;
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
     cursor: grab;
   }
-  .card-wrapper.flipped { transform: rotateY(180deg); }
-  .card-wrapper.dragging { transition: none; cursor: grabbing; }
+  .card-wrapper.dragging { cursor: grabbing; }
+
   .card-face {
     position: absolute;
     width: 100%;
@@ -50,8 +59,10 @@
     overflow: hidden;
     box-shadow: 0 30px 80px rgba(0,0,0,0.6);
   }
+
+  /* ===== FRONT ===== */
   .card-front { background: #fff; }
-  .card-front .yellow-blob {
+  .card-front .pink-blob {
     position: absolute;
     top: 0; left: 0;
     width: 100%; height: 52%;
@@ -93,6 +104,8 @@
     width: 180px;
     object-fit: contain;
   }
+
+  /* ===== BACK ===== */
   .card-back {
     background: rgb(250, 199, 202);
     transform: rotateY(180deg);
@@ -114,25 +127,16 @@
     position: relative;
     z-index: 1;
   }
-  .arrows {
-    margin-top: 28px;
-    display: flex;
-    gap: 40px;
-  }
-  .arrow {
-    color: rgba(255,255,255,0.2);
-    font-size: 24px;
-    transition: color 0.3s;
-  }
-  .arrow.active { color: rgba(255,220,0,0.8); }
 </style>
 </head>
 <body>
+
 <p class="hint">← swipe →</p>
+
 <div class="scene">
   <div class="card-wrapper" id="card">
     <div class="card-face card-front">
-      <div class="yellow-blob"></div>
+      <div class="pink-blob"></div>
       <div class="number">1</div>
       <div class="question-ja">この1年で<br>一番頑張ったことは？</div>
       <div class="question-en">What was the most challenging thing<br>you accomplished in the past year?</div>
@@ -144,29 +148,83 @@
     </div>
   </div>
 </div>
-<div class="arrows">
-  <span class="arrow" id="arrowLeft">←</span>
-  <span class="arrow" id="arrowRight">→</span>
-</div>
+
 <script>
   const card = document.getElementById('card');
-  let startX = 0, currentX = 0, isDragging = false, isFlipped = false;
+  let startX = 0;
+  let currentX = 0;
+  let isDragging = false;
+  let currentRotation = 0; // 現在の累積回転角度（常に360の倍数=表面）
 
-  function flip() {
-    isFlipped = !isFlipped;
-    card.classList.toggle('flipped', isFlipped);
-    const arrow = isFlipped ? document.getElementById('arrowRight') : document.getElementById('arrowLeft');
-    arrow.classList.add('active');
-    setTimeout(() => arrow.classList.remove('active'), 400);
+  function getRotation() {
+    return currentRotation;
   }
 
-  card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; card.classList.add('dragging'); }, { passive: true });
-  card.addEventListener('touchmove', e => { if (!isDragging) return; currentX = e.touches[0].clientX - startX; const rot = isFlipped ? 180 : 0; card.style.transform = `rotateY(${rot + currentX * 0.3}deg)`; }, { passive: true });
-  card.addEventListener('touchend', () => { isDragging = false; card.classList.remove('dragging'); card.style.transform = ''; if (Math.abs(currentX) > 50) flip(); else card.classList.toggle('flipped', isFlipped); currentX = 0; });
+  // スワイプ完了時：くるくる回って表面（360の倍数）で止まる
+  function spinToFront(direction) {
+    // 方向に応じて2〜3回転してから表面（正面）で止まる
+    const spins = 2; // 回転数
+    const extra = direction > 0 ? 360 * spins : -360 * spins;
+    const target = Math.round((currentRotation + extra) / 360) * 360;
 
-  card.addEventListener('mousedown', e => { startX = e.clientX; isDragging = true; card.classList.add('dragging'); });
-  window.addEventListener('mousemove', e => { if (!isDragging) return; currentX = e.clientX - startX; const rot = isFlipped ? 180 : 0; card.style.transform = `rotateY(${rot + currentX * 0.3}deg)`; });
-  window.addEventListener('mouseup', () => { if (!isDragging) return; isDragging = false; card.classList.remove('dragging'); card.style.transform = ''; if (Math.abs(currentX) > 50) flip(); else card.classList.toggle('flipped', isFlipped); currentX = 0; });
+    card.style.transition = 'transform 1.4s cubic-bezier(0.23, 1, 0.32, 1)';
+    card.style.transform = `rotateY(${target}deg)`;
+    currentRotation = target;
+  }
+
+  // ドラッグ中はリアルタイムで回転
+  card.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    isDragging = true;
+    card.classList.add('dragging');
+    card.style.transition = 'none';
+  }, { passive: true });
+
+  card.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    currentX = e.touches[0].clientX - startX;
+    card.style.transform = `rotateY(${currentRotation + currentX * 0.4}deg)`;
+  }, { passive: true });
+
+  card.addEventListener('touchend', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('dragging');
+    if (Math.abs(currentX) > 40) {
+      spinToFront(currentX);
+    } else {
+      // 少ししか動かしてなければ元に戻す
+      card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
+      card.style.transform = `rotateY(${currentRotation}deg)`;
+    }
+    currentX = 0;
+  });
+
+  card.addEventListener('mousedown', e => {
+    startX = e.clientX;
+    isDragging = true;
+    card.classList.add('dragging');
+    card.style.transition = 'none';
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (!isDragging) return;
+    currentX = e.clientX - startX;
+    card.style.transform = `rotateY(${currentRotation + currentX * 0.4}deg)`;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('dragging');
+    if (Math.abs(currentX) > 40) {
+      spinToFront(currentX);
+    } else {
+      card.style.transition = 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)';
+      card.style.transform = `rotateY(${currentRotation}deg)`;
+    }
+    currentX = 0;
+  });
 </script>
 </body>
 </html>
