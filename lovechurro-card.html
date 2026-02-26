@@ -339,7 +339,7 @@
 </style>
 </head>
 <body>
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.43</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.44</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -566,13 +566,14 @@
     currentX = 0;
     card.classList.add("dragging");
     setCardTransition("none");
-    // ★ drag開始時: 必ず currentRotation から描画を開始（CSSとの競合防止）
     setCardTransform(`rotateY(${currentRotation}deg)`);
-    cardFront.classList.remove("revealed");
+    if (!cardFixed) {
+      cardFront.classList.remove("revealed");
+      setInputDisabled(true);
+    }
     // ペーク停止
     card.style.animation = "";
     isPeeking = false;
-    setInputDisabled(true);
     // スワイプ開始と同時にNextボタンを消す
     nextBtnWrap.classList.remove("visible", "nudge");
     clearTimeout(idleTimer);
@@ -593,7 +594,13 @@
     } else {
       setCardTransition("transform 0.6s cubic-bezier(0.23,1,0.32,1)");
       setCardTransform(`rotateY(${currentRotation}deg)`);
-      setInputDisabled(false);
+      if (!cardFixed) setInputDisabled(false);
+      else {
+        // cardFixed中はtap→戻したのでrevealed復元
+        cardFront.classList.add("revealed");
+        nextBtnWrap.classList.add("visible");
+        resetIdleTimer();
+      }
     }
     currentX = 0;
   });
@@ -607,10 +614,12 @@
     card.classList.add("dragging");
     setCardTransition("none");
     setCardTransform(`rotateY(${currentRotation}deg)`);
-    cardFront.classList.remove("revealed");
+    if (!cardFixed) {
+      cardFront.classList.remove("revealed");
+      setInputDisabled(true);
+    }
     card.style.animation = "";
     isPeeking = false;
-    setInputDisabled(true);
     // スワイプ開始と同時にNextボタンを消す
     nextBtnWrap.classList.remove("visible", "nudge");
     clearTimeout(idleTimer);
