@@ -234,7 +234,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.14</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.15</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -385,10 +385,9 @@
   function updateChatHeight() {
     const chatArea = document.getElementById('chatArea');
     const cta = document.querySelector('.cta');
-    const ctaRect = cta.getBoundingClientRect();
-    const ctaH = window.innerHeight - ctaRect.top;
+    const ctaH = cta.offsetHeight;
     chatArea.style.bottom = ctaH + 'px';
-    chatArea.style.height = '200px';
+    chatArea.style.height = '260px';
   }
   window.addEventListener('resize', updateChatHeight);
   window.addEventListener('load', updateChatHeight);
