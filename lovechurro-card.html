@@ -232,7 +232,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.6</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.7</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -389,16 +389,33 @@
     chatArea.style.maxHeight = Math.max(available, 80) + 'px';
   }
 
-  // カードを縮小してチャットスペースを確保
+  // カードを縮小してチャットスペースを確保（幅固定・高さのみ縮小）
   function shrinkCard() {
     const winH = window.innerHeight;
     const scene = document.querySelector('.scene');
-    // 画面高さの45%をカードに、残りをチャットに
-    const cardH = Math.min(Math.floor(winH * 0.45), 480);
-    const cardW = Math.floor(cardH * (300 / 480));
-    scene.style.width  = cardW + 'px';
+    const cardH = Math.min(Math.floor(winH * 0.42), 480);
+    scene.style.width  = '300px';
     scene.style.height = cardH + 'px';
-    setTimeout(updateChatHeight, 450); // transitionが終わってから計算
+
+    // カード内テキスト位置を縮小率に合わせて調整
+    const ratio = cardH / 480;
+    const front = document.getElementById('cardFront');
+    const blob = front.querySelector('.pink-blob');
+    const qja  = front.querySelector('.question-ja');
+    const qen  = front.querySelector('.question-en');
+    const brand = front.querySelector('.brand');
+    const num  = front.querySelector('.number');
+
+    blob.style.height = (52 * ratio) + '%';
+    num.style.fontSize  = Math.round(96 * ratio) + 'px';
+    num.style.top  = Math.round(22 * ratio) + 'px';
+    qja.style.top  = Math.round(220 * ratio) + 'px';
+    qja.style.fontSize = Math.round(22 * ratio) + 'px';
+    qen.style.top  = Math.round(310 * ratio) + 'px';
+    qen.style.fontSize = Math.round(13 * ratio) + 'px';
+    brand.style.bottom = Math.round(20 * ratio) + 'px';
+
+    setTimeout(updateChatHeight, 450);
   }
 
   window.addEventListener('resize', updateChatHeight);
