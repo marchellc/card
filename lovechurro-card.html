@@ -234,7 +234,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.13</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.14</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -384,18 +384,13 @@
   // チャットエリアの高さを設定（カードサイズは変えない）
   function updateChatHeight() {
     const chatArea = document.getElementById('chatArea');
-    const winH = window.innerHeight;
     const cta = document.querySelector('.cta');
     const ctaRect = cta.getBoundingClientRect();
-    // CTAの実際の上端からウィンドウ下端までの距離
-    const ctaH = winH - ctaRect.top;
-    // チャット高さ = 画面の50% - CTA高さ
-    const chatH = Math.floor(winH * 0.5) - ctaRect.height;
+    const ctaH = window.innerHeight - ctaRect.top;
     chatArea.style.bottom = ctaH + 'px';
-    chatArea.style.height = Math.max(chatH, 120) + 'px';
+    chatArea.style.height = '200px';
   }
   window.addEventListener('resize', updateChatHeight);
-  // DOM描画後に確実に計算
   window.addEventListener('load', updateChatHeight);
   
   const card = document.getElementById('card');
