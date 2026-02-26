@@ -65,6 +65,7 @@
     width: 300px;
     height: 480px;
     perspective: 1200px;
+    -webkit-perspective: 1200px;
     flex-shrink: 0;
   }
   /* ★ card-wrapper: transform-style: preserve-3dを保持しつつ、CSSアニメーションは一切かけない */
@@ -106,12 +107,14 @@
   .card-front .question-ja,
   .card-front .question-en,
   .card-front .brand {
-    opacity: 0; transform: translateY(12px);
-    transition: opacity 0.5s ease, transform 0.5s ease;
+    opacity: 0;
+    transform: translateY(12px);
+    -webkit-transform: translateY(12px);
+    transition: opacity 0.5s ease, transform 0.5s ease, -webkit-transform 0.5s ease;
   }
-  .card-front.revealed .question-ja { opacity:1; transform:translateY(0); transition-delay:0.1s; }
-  .card-front.revealed .question-en { opacity:1; transform:translateY(0); transition-delay:0.25s; }
-  .card-front.revealed .brand       { opacity:1; transform:translateY(0); transition-delay:0.4s; }
+  .card-front.revealed .question-ja { opacity:1; transform:translateY(0); -webkit-transform:translateY(0); transition-delay:0.1s; }
+  .card-front.revealed .question-en { opacity:1; transform:translateY(0); -webkit-transform:translateY(0); transition-delay:0.25s; }
+  .card-front.revealed .brand       { opacity:1; transform:translateY(0); -webkit-transform:translateY(0); transition-delay:0.4s; }
   .card-front .question-ja {
     position: absolute; top: 168px; left: 28px; right: 28px;
     font-size: 22px; font-weight: 700; color: #111; line-height: 1.5;
@@ -423,9 +426,17 @@
   const cardFront = document.getElementById("cardFront");
   const cta = document.getElementById("cta");
 
-  // ★ 初期: インラインtransformで明示
-  card.style.transition = "none";
-  card.style.transform = "rotateY(0deg)";
+  // ★ 初期: インラインtransformで明示（Android対応）
+  function setCardTransform(val) {
+    card.style.transform = val;
+    card.style.webkitTransform = val;
+  }
+  function setCardTransition(val) {
+    card.style.transition = val;
+    card.style.webkitTransition = val;
+  }
+  setCardTransition("none");
+  setCardTransform("rotateY(0deg)");
 
   // ===== 質問セット =====
   function setQuestion(idx) {
@@ -459,7 +470,7 @@
     isPeeking = true;
     peekCount++;
     // ★ インラインtransformをクリア → CSSアニメーション(rotateY 0→20→0)が効く
-    card.style.transition = "none";
+    setCardTransition("none");
     card.style.transform = "";
     card.style.animation = "cardPeek 1.4s ease-in-out";
     card.addEventListener("animationend", onPeekEnd, { once: true });
@@ -468,7 +479,7 @@
   function onPeekEnd() {
     card.style.animation = "";
     // ★ currentRotation でインライン transform を復元
-    card.style.transform = `rotateY(${currentRotation}deg)`;
+    setCardTransform(`rotateY(${currentRotation}deg)`);
     isPeeking = false;
     if (!isSpinning && !cardFixed && peekCount < maxPeek) {
       setTimeout(playPeek, 800);
@@ -521,8 +532,8 @@
     }
 
     // スムーズなスピン
-    card.style.transition = "transform 1.6s cubic-bezier(0.16,1,0.3,1)";
-    card.style.transform = `rotateY(${finalTarget}deg)`;
+    setCardTransition("transform 1.6s cubic-bezier(0.16,1,0.3,1)");
+    setCardTransform(`rotateY(${finalTarget}deg)`);
     currentRotation = finalTarget;
 
     // 900ms後: 表面が見え始めるタイミングでテキストとCTAをフェードイン
@@ -554,9 +565,9 @@
     isDragging = true;
     currentX = 0;
     card.classList.add("dragging");
-    card.style.transition = "none";
+    setCardTransition("none");
     // ★ drag開始時: 必ず currentRotation から描画を開始（CSSとの競合防止）
-    card.style.transform = `rotateY(${currentRotation}deg)`;
+    setCardTransform(`rotateY(${currentRotation}deg)`);
     cardFront.classList.remove("revealed");
     // ペーク停止
     card.style.animation = "";
@@ -570,7 +581,7 @@
   card.addEventListener("touchmove", e => {
     if (!isDragging) return;
     currentX = e.touches[0].clientX - startX;
-    card.style.transform = `rotateY(${currentRotation + currentX * 0.5}deg)`;
+    setCardTransform(`rotateY(${currentRotation + currentX * 0.5}deg)`);
   }, { passive: true });
 
   card.addEventListener("touchend", () => {
@@ -580,8 +591,8 @@
     if (Math.abs(currentX) > 30) {
       spinToTarget(currentX);
     } else {
-      card.style.transition = "transform 0.6s cubic-bezier(0.23,1,0.32,1)";
-      card.style.transform = `rotateY(${currentRotation}deg)`;
+      setCardTransition("transform 0.6s cubic-bezier(0.23,1,0.32,1)");
+      setCardTransform(`rotateY(${currentRotation}deg)`);
       setInputDisabled(false);
     }
     currentX = 0;
@@ -594,8 +605,8 @@
     isDragging = true;
     currentX = 0;
     card.classList.add("dragging");
-    card.style.transition = "none";
-    card.style.transform = `rotateY(${currentRotation}deg)`;
+    setCardTransition("none");
+    setCardTransform(`rotateY(${currentRotation}deg)`);
     cardFront.classList.remove("revealed");
     card.style.animation = "";
     isPeeking = false;
@@ -608,7 +619,7 @@
   window.addEventListener("mousemove", e => {
     if (!isDragging) return;
     currentX = e.clientX - startX;
-    card.style.transform = `rotateY(${currentRotation + currentX * 0.5}deg)`;
+    setCardTransform(`rotateY(${currentRotation + currentX * 0.5}deg)`);
   });
   window.addEventListener("mouseup", () => {
     if (!isDragging) return;
@@ -617,8 +628,8 @@
     if (Math.abs(currentX) > 30) {
       spinToTarget(currentX);
     } else {
-      card.style.transition = "transform 0.6s cubic-bezier(0.23,1,0.32,1)";
-      card.style.transform = `rotateY(${currentRotation}deg)`;
+      setCardTransition("transform 0.6s cubic-bezier(0.23,1,0.32,1)");
+      setCardTransform(`rotateY(${currentRotation}deg)`);
       setInputDisabled(false);
     }
     currentX = 0;
@@ -630,16 +641,16 @@
     if (cardFixed || isSpinning) return;
     e.preventDefault();
     wDelta += e.deltaX;
-    card.style.transition = "none";
+    setCardTransition("none");
     cardFront.classList.remove("revealed");
-    card.style.transform = `rotateY(${currentRotation + wDelta * 0.5}deg)`;
+    setCardTransform(`rotateY(${currentRotation + wDelta * 0.5}deg)`);
     clearTimeout(wTimer);
     wTimer = setTimeout(() => {
       if (Math.abs(wDelta) > 30) {
         spinToTarget(wDelta);
       } else {
-        card.style.transition = "transform 0.5s cubic-bezier(0.23,1,0.32,1)";
-        card.style.transform = `rotateY(${currentRotation}deg)`;
+        setCardTransition("transform 0.5s cubic-bezier(0.23,1,0.32,1)");
+        setCardTransform(`rotateY(${currentRotation}deg)`);
         setInputDisabled(false);
       }
       wDelta = 0;
@@ -870,9 +881,13 @@
     setQuestion(questionIdx);
     setInputDisabled(true);
 
-    const finalTarget = currentRotation + 540; // 1.5回転して表面へ
-    card.style.transition = "transform 1.6s cubic-bezier(0.16,1,0.3,1)";
-    card.style.transform = `rotateY(${finalTarget}deg)`;
+    // ★ 必ず表面(180+360n)に着地する計算（spinToTargetと同じロジック）
+    const baseAngle = currentRotation + 360;
+    const n = Math.round((baseAngle - 180) / 360);
+    let finalTarget = 180 + n * 360;
+    if (finalTarget <= currentRotation + 270) finalTarget += 360;
+    setCardTransition("transform 1.6s cubic-bezier(0.16,1,0.3,1)");
+    setCardTransform(`rotateY(${finalTarget}deg)`);
     currentRotation = finalTarget;
 
     setTimeout(() => {
@@ -1003,8 +1018,8 @@
     chatArea.classList.add("visible");
     if (!cardFixed) {
       cardFixed = true;
-      card.style.transition = "none";
-      card.style.transform = "rotateY(180deg)";
+      setCardTransition("none");
+      setCardTransform("rotateY(180deg)");
       currentRotation = 180;
       card.style.pointerEvents = "none";
       cardFront.classList.add("revealed");
