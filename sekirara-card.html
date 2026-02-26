@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SEKIRARA</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Noto Sans JP', sans-serif;
+    overflow: hidden;
+    user-select: none;
+  }
+  .hint {
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+    letter-spacing: 0.15em;
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+  .scene {
+    width: 300px;
+    height: 480px;
+    perspective: 1200px;
+  }
+  .card-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+    cursor: grab;
+  }
+  .card-wrapper.flipped { transform: rotateY(180deg); }
+  .card-wrapper.dragging { transition: none; cursor: grabbing; }
+  .card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .card-front { background: #fff; }
+  .card-front .yellow-blob {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 52%;
+    background: #FFE000;
+    border-radius: 0 0 60% 0 / 0 0 40% 0;
+  }
+  .card-front .number {
+    position: absolute;
+    top: 22px; left: 28px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 96px;
+    color: #fff;
+    line-height: 1;
+  }
+  .card-front .question-ja {
+    position: absolute;
+    top: 220px; left: 28px; right: 28px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.5;
+  }
+  .card-front .question-en {
+    position: absolute;
+    top: 310px; left: 28px; right: 28px;
+    font-size: 13px;
+    color: #555;
+    line-height: 1.7;
+  }
+  .card-front .brand {
+    position: absolute;
+    bottom: 28px; left: 0; right: 0;
+    text-align: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 32px;
+    letter-spacing: 0.25em;
+    color: #FFE000;
+  }
+  .card-back {
+    background: #FFE000;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .card-back .back-brand {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 48px;
+    letter-spacing: 0.3em;
+    color: #111;
+  }
+  .card-back .back-tagline {
+    margin-top: 12px;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    color: rgba(0,0,0,0.5);
+    text-transform: uppercase;
+  }
+  .card-back .back-pattern {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(circle, rgba(0,0,0,0.06) 1px, transparent 1px);
+    background-size: 20px 20px;
+    border-radius: 20px;
+  }
+  .arrows {
+    margin-top: 28px;
+    display: flex;
+    gap: 40px;
+    align-items: center;
+  }
+  .arrow {
+    color: rgba(255,255,255,0.2);
+    font-size: 24px;
+    transition: color 0.3s;
+  }
+  .arrow.active { color: rgba(255,220,0,0.8); }
+</style>
+</head>
+<body>
+<p class="hint">← swipe →</p>
+<div class="scene">
+  <div class="card-wrapper" id="card">
+    <div class="card-face card-front">
+      <div class="yellow-blob"></div>
+      <div class="number">1</div>
+      <div class="question-ja">この1年で<br>一番頑張ったことは？</div>
+      <div class="question-en">What was the most challenging thing<br>you accomplished in the past year?</div>
+      <div class="brand">SEKIRARA</div>
+    </div>
+    <div class="card-face card-back">
+      <div class="back-pattern"></div>
+      <div class="back-brand">SEKIRARA</div>
+      <div class="back-tagline">Talk Honestly · Connect Deeply</div>
+    </div>
+  </div>
+</div>
+<div class="arrows">
+  <span class="arrow" id="arrowLeft">←</span>
+  <span class="arrow" id="arrowRight">→</span>
+</div>
+<script>
+  const card = document.getElementById('card');
+  let startX = 0, currentX = 0, isDragging = false, isFlipped = false;
+
+  function flip() {
+    isFlipped = !isFlipped;
+    card.classList.toggle('flipped', isFlipped);
+    const arrow = isFlipped ? document.getElementById('arrowRight') : document.getElementById('arrowLeft');
+    arrow.classList.add('active');
+    setTimeout(() => arrow.classList.remove('active'), 400);
+  }
+
+  card.addEventListener('touchstart', e => { startX = e.touches[0].clientX; isDragging = true; card.classList.add('dragging'); }, { passive: true });
+  card.addEventListener('touchmove', e => { if (!isDragging) return; currentX = e.touches[0].clientX - startX; const rot = isFlipped ? 180 : 0; card.style.transform = `rotateY(${rot + currentX * 0.3}deg)`; }, { passive: true });
+  card.addEventListener('touchend', () => { isDragging = false; card.classList.remove('dragging'); card.style.transform = ''; if (Math.abs(currentX) > 50) flip(); else card.classList.toggle('flipped', isFlipped); currentX = 0; });
+
+  card.addEventListener('mousedown', e => { startX = e.clientX; isDragging = true; card.classList.add('dragging'); });
+  window.addEventListener('mousemove', e => { if (!isDragging) return; currentX = e.clientX - startX; const rot = isFlipped ? 180 : 0; card.style.transform = `rotateY(${rot + currentX * 0.3}deg)`; });
+  window.addEventListener('mouseup', () => { if (!isDragging) return; isDragging = false; card.classList.remove('dragging'); card.style.transform = ''; if (Math.abs(currentX) > 50) flip(); else card.classList.toggle('flipped', isFlipped); currentX = 0; });
+</script>
+</body>
+</html>
