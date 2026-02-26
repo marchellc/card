@@ -523,8 +523,8 @@
     setTimeout(() => {
       cardFront.classList.add("revealed");
       cta.classList.add("visible");
-      // カードが固定済みなら次の質問ボタンも再表示
-      if (cardFixed) setTimeout(showNextBtn, 200);
+      // 常にNextボタンを表示してナッジ開始（回答前でも・チャット中も）
+      setTimeout(showNextBtn, 200);
     }, 900);
 
     // 1600ms後: スピン完了
