@@ -105,15 +105,15 @@
   .card-front.revealed .question-en { opacity:1; transform:translateY(0); transition-delay:0.25s; }
   .card-front.revealed .brand       { opacity:1; transform:translateY(0); transition-delay:0.4s; }
   .card-front .question-ja {
-    position: absolute; top: 220px; left: 28px; right: 28px;
+    position: absolute; top: 190px; left: 28px; right: 28px;
     font-size: 22px; font-weight: 700; color: #111; line-height: 1.5;
   }
   .card-front .question-en {
-    position: absolute; top: 310px; left: 28px; right: 28px;
+    position: absolute; top: 272px; left: 28px; right: 28px;
     font-size: 13px; color: #555; line-height: 1.7;
   }
   .card-front .brand {
-    position: absolute; bottom: 20px; left: 0; right: 0;
+    position: absolute; bottom: 16px; left: 0; right: 0;
     display: flex; justify-content: center; align-items: center;
   }
   .card-front .brand img { width: 180px; object-fit: contain; }
@@ -232,7 +232,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.7</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.8</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -325,7 +325,7 @@
       });
       // card-section の min-height を解除してからカード縮小・チャット高さを計算
       document.getElementById('cardSection').style.minHeight = 'auto';
-      shrinkCard();
+      updateChatHeight();
     }
 
     const now = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
@@ -377,47 +377,15 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  // チャットエリアの高さを動的計算
+  // チャットエリアの高さを設定（カードサイズは変えない）
   function updateChatHeight() {
-    const winH = window.innerHeight;
-    const cardSection = document.getElementById('cardSection');
-    const cta = document.querySelector('.cta');
     const chatArea = document.getElementById('chatArea');
-    const cardSectionH = cardSection.getBoundingClientRect().height;
-    const ctaH = cta.getBoundingClientRect().height;
-    const available = winH - cardSectionH - ctaH - 16;
-    chatArea.style.maxHeight = Math.max(available, 80) + 'px';
-  }
-
-  // カードを縮小してチャットスペースを確保（幅固定・高さのみ縮小）
-  function shrinkCard() {
     const winH = window.innerHeight;
-    const scene = document.querySelector('.scene');
-    const cardH = Math.min(Math.floor(winH * 0.42), 480);
-    scene.style.width  = '300px';
-    scene.style.height = cardH + 'px';
-
-    // カード内テキスト位置を縮小率に合わせて調整
-    const ratio = cardH / 480;
-    const front = document.getElementById('cardFront');
-    const blob = front.querySelector('.pink-blob');
-    const qja  = front.querySelector('.question-ja');
-    const qen  = front.querySelector('.question-en');
-    const brand = front.querySelector('.brand');
-    const num  = front.querySelector('.number');
-
-    blob.style.height = (52 * ratio) + '%';
-    num.style.fontSize  = Math.round(96 * ratio) + 'px';
-    num.style.top  = Math.round(22 * ratio) + 'px';
-    qja.style.top  = Math.round(220 * ratio) + 'px';
-    qja.style.fontSize = Math.round(22 * ratio) + 'px';
-    qen.style.top  = Math.round(310 * ratio) + 'px';
-    qen.style.fontSize = Math.round(13 * ratio) + 'px';
-    brand.style.bottom = Math.round(20 * ratio) + 'px';
-
-    setTimeout(updateChatHeight, 450);
+    const ctaH = document.querySelector('.cta').getBoundingClientRect().height;
+    // 画面下部から CTAを引いた残りの40%をチャットに充てる
+    const chatH = Math.floor((winH - ctaH) * 0.4);
+    chatArea.style.maxHeight = Math.max(chatH, 120) + 'px';
   }
-
   window.addEventListener('resize', updateChatHeight);
   
   const card = document.getElementById('card');
