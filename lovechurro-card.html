@@ -393,9 +393,8 @@
     if (isSpinning || cardFixed) return;
     isSpinning = true;
 
-    // ペーク中なら止める
+    // ペーク中なら止める（transformはそのまま維持 → カクつき防止）
     card.style.animation = "";
-    card.style.transform = `rotateY(${currentRotation}deg)`;
     isPeeking = false;
 
     // 質問管理
@@ -432,11 +431,11 @@
     card.style.transform = `rotateY(${finalTarget}deg)`;
     currentRotation = finalTarget;
 
-    // 1300ms後: 質問テキストとCTAをフェードイン
+    // 900ms後: 表面が見え始めるタイミングでテキストとCTAをフェードイン
     setTimeout(() => {
       cardFront.classList.add("revealed");
       cta.classList.add("visible");
-    }, 1300);
+    }, 900);
 
     // 1600ms後: スピン完了
     setTimeout(() => {
