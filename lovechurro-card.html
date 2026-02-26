@@ -60,12 +60,13 @@
     margin-bottom: 24px;
   }
 
-  /* カード：元の300×480固定 */
+  /* カード：JSで動的サイズ設定 */
   .scene {
     width: 300px;
     height: 480px;
     perspective: 1200px;
     flex-shrink: 0;
+    transition: width 0.4s ease, height 0.4s ease;
   }
   .card-wrapper {
     width: 100%; height: 100%;
@@ -231,7 +232,7 @@
 </head>
 <body>
 
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.5</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.6</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
@@ -322,9 +323,9 @@
         el.style.opacity = '1';
         el.style.transform = 'translateY(0)';
       });
-      // card-section の min-height を解除してからチャット高さを計算
+      // card-section の min-height を解除してからカード縮小・チャット高さを計算
       document.getElementById('cardSection').style.minHeight = 'auto';
-      setTimeout(updateChatHeight, 50);
+      shrinkCard();
     }
 
     const now = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
@@ -387,8 +388,20 @@
     const available = winH - cardSectionH - ctaH - 16;
     chatArea.style.maxHeight = Math.max(available, 80) + 'px';
   }
+
+  // カードを縮小してチャットスペースを確保
+  function shrinkCard() {
+    const winH = window.innerHeight;
+    const scene = document.querySelector('.scene');
+    // 画面高さの45%をカードに、残りをチャットに
+    const cardH = Math.min(Math.floor(winH * 0.45), 480);
+    const cardW = Math.floor(cardH * (300 / 480));
+    scene.style.width  = cardW + 'px';
+    scene.style.height = cardH + 'px';
+    setTimeout(updateChatHeight, 450); // transitionが終わってから計算
+  }
+
   window.addEventListener('resize', updateChatHeight);
-  // 初回はチャット表示後に計算
   
   const card = document.getElementById('card');
   const cardFront = document.getElementById('cardFront');
