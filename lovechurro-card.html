@@ -746,6 +746,8 @@
       document.querySelector(".sub-hint").style.display = "none";
       document.getElementById("cardSection").style.minHeight = "auto";
       document.getElementById("cardSection").style.paddingTop = "12px";
+      cta.classList.add("visible");
+      setInputDisabled(false);
       setTimeout(updateChatHeight, 50);
     }
     const time = new Date(ts || Date.now()).toLocaleTimeString("ja-JP", { hour:"2-digit", minute:"2-digit" });
