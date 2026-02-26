@@ -21,13 +21,10 @@
   /* ===== スクロール可能なメインエリア ===== */
   .main {
     flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    /* CTA分の余白 */
     padding-bottom: 70px;
   }
   .main::-webkit-scrollbar { display: none; }
@@ -138,7 +135,11 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px 0 8px;
+    max-height: 260px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
+  .chat-area::-webkit-scrollbar { display: none; }
   .chat-area.visible { display: flex; }
 
   .msg-row {
@@ -278,9 +279,18 @@
   const dummyReplies = [
     '去年は初めてのマラソンを完走したこと！42kmは本当にきつかったけど最高だった😊',
     'それもすごい！転職は勇気いるよね。今の仕事はどう？',
-    'ほんと、お互い頑張ったね！✨',
+    '最初は不安だったけど、だんだん楽しくなってきたよ！',
+    'いいね！やっぱり新しい環境って刺激になるよね。',
+    'そうそう！あなたのマラソンはどこで走ったの？',
+    '地元の大会だよ。沿道の応援が本当に力になった😭',
+    'それめちゃくちゃ感動するやつだ…来年は私も出てみようかな',
+    'ぜひ一緒に出よう！トレーニングから付き合うよ💪',
+    'ほんとに？！それは心強いな〜！',
+    'ふたりで頑張ろう！来年の今頃また振り返ろうね✨',
   ];
   let dummyIndex = 0;
+  let cardFixed = false;
+  let isSpinning = false;
 
   function avatarHTML(isMe) {
     const fill = isMe ? '#333' : 'rgba(255,255,255,0.7)';
@@ -296,7 +306,25 @@
     const chatArea = document.getElementById('chatArea');
     chatArea.classList.add('visible');
 
-    // card-section の min-height を解除してチャットが自然に下に続くように
+    // 初回メッセージ時：カードを表面で完全固定
+    if (!cardFixed) {
+      cardFixed = true;
+      // 表面に固定
+      card.style.transition = 'none';
+      card.style.transform = 'rotateY(0deg)';
+      currentRotation = 0;
+      card.style.pointerEvents = 'none';
+      // 質問テキストをtransitionなしで即表示・固定
+      cardFront.classList.add('revealed');
+      const targets = cardFront.querySelectorAll('.question-ja, .question-en, .brand');
+      targets.forEach(el => {
+        el.style.transition = 'none';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      });
+    }
+
+    // card-section の min-height を解除
     document.getElementById('cardSection').style.minHeight = 'auto';
 
     const now = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
@@ -309,10 +337,10 @@
       : `${avatarHTML(false)}${bubble}${time}`;
     chatArea.appendChild(row);
 
-    // 最下部へスクロール
+    // チャットエリアを最下部へスクロール
     setTimeout(() => {
-      const main = document.getElementById('main');
-      main.scrollTop = main.scrollHeight;
+      const ca = document.getElementById('chatArea');
+      ca.scrollTop = ca.scrollHeight;
     }, 50);
 
     // ダミー返信
@@ -353,18 +381,39 @@
   const cardFront = document.getElementById('cardFront');
   let startX = 0, currentX = 0, isDragging = false, currentRotation = 180;
 
+  function setInputDisabled(disabled) {
+    const input = document.getElementById('answerInput');
+    const send = document.getElementById('sendBtn');
+    input.disabled = disabled;
+    send.disabled = disabled;
+    input.style.opacity = disabled ? '0.4' : '1';
+    send.style.opacity = disabled ? '0.4' : '1';
+    input.placeholder = disabled ? 'カードをめくってね…' : '回答を入力…';
+  }
+
+  // 最初は入力不可
+  setInputDisabled(true);
+
   function spinToTarget(dir) {
+    isSpinning = true;
+    setInputDisabled(true);
     const target = Math.round((currentRotation + (dir > 0 ? 720 : -720)) / 360) * 360;
     card.style.transition = 'transform 1.4s cubic-bezier(0.23,1,0.32,1)';
     card.style.transform = `rotateY(${target}deg)`;
     currentRotation = target;
-    setTimeout(() => { cardFront.classList.add('revealed'); }, 600);
+    setTimeout(() => {
+      cardFront.classList.add('revealed');
+      isSpinning = false;
+      setInputDisabled(false);
+    }, 1400);
   }
 
   card.addEventListener('touchstart', e => {
+    if (cardFixed) return;
     startX = e.touches[0].clientX; isDragging = true;
     card.classList.add('dragging'); card.style.transition = 'none';
     cardFront.classList.remove('revealed');
+    setInputDisabled(true);
   }, { passive: true });
   card.addEventListener('touchmove', e => {
     if (!isDragging) return;
@@ -381,9 +430,12 @@
     currentX = 0;
   });
   card.addEventListener('mousedown', e => {
+    if (cardFixed) return;
     startX = e.clientX; isDragging = true;
     card.classList.add('dragging'); card.style.transition = 'none';
-    cardFront.classList.remove('revealed'); e.preventDefault();
+    cardFront.classList.remove('revealed');
+    setInputDisabled(true);
+    e.preventDefault();
   });
   window.addEventListener('mousemove', e => {
     if (!isDragging) return;
