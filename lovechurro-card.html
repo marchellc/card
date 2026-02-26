@@ -135,9 +135,9 @@
     flex-direction: column;
     gap: 12px;
     padding: 16px 0 8px;
-    max-height: 260px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    /* 高さはJSで動的にセット */
   }
   .chat-area::-webkit-scrollbar { display: none; }
   .chat-area.visible { display: flex; }
@@ -309,12 +309,10 @@
     // 初回メッセージ時：カードを表面で完全固定
     if (!cardFixed) {
       cardFixed = true;
-      // 表面に固定
       card.style.transition = 'none';
       card.style.transform = 'rotateY(0deg)';
       currentRotation = 0;
       card.style.pointerEvents = 'none';
-      // 質問テキストをtransitionなしで即表示・固定
       cardFront.classList.add('revealed');
       const targets = cardFront.querySelectorAll('.question-ja, .question-en, .brand');
       targets.forEach(el => {
@@ -322,10 +320,10 @@
         el.style.opacity = '1';
         el.style.transform = 'translateY(0)';
       });
+      // card-section の min-height を解除してからチャット高さを計算
+      document.getElementById('cardSection').style.minHeight = 'auto';
+      setTimeout(updateChatHeight, 50);
     }
-
-    // card-section の min-height を解除
-    document.getElementById('cardSection').style.minHeight = 'auto';
 
     const now = new Date().toLocaleTimeString('ja-JP', { hour:'2-digit', minute:'2-digit' });
     const row = document.createElement('div');
@@ -376,7 +374,20 @@
     setTimeout(() => t.classList.remove('show'), 2500);
   }
 
-  // カード操作
+  // チャットエリアの高さを動的計算
+  function updateChatHeight() {
+    const winH = window.innerHeight;
+    const cardSection = document.getElementById('cardSection');
+    const cta = document.querySelector('.cta');
+    const chatArea = document.getElementById('chatArea');
+    const cardSectionH = cardSection.getBoundingClientRect().height;
+    const ctaH = cta.getBoundingClientRect().height;
+    const available = winH - cardSectionH - ctaH - 16;
+    chatArea.style.maxHeight = Math.max(available, 80) + 'px';
+  }
+  window.addEventListener('resize', updateChatHeight);
+  // 初回はチャット表示後に計算
+  
   const card = document.getElementById('card');
   const cardFront = document.getElementById('cardFront');
   let startX = 0, currentX = 0, isDragging = false, currentRotation = 180;
