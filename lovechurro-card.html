@@ -9,7 +9,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { height: 100%; height: 100dvh; }
   body {
-    background: #111;
+    background: #f5f0e8;
     font-family: "Noto Sans JP", sans-serif;
     user-select: none;
     height: 100%;
@@ -49,7 +49,7 @@
     100% { transform: rotateY(0deg); }
   }
   .hint {
-    color: rgba(255,255,255,0.6);
+    color: rgba(0,0,0,0.35);
     font-size: 12px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -57,7 +57,7 @@
     margin-bottom: 6px;
   }
   .sub-hint {
-    color: rgba(255,255,255,0.35);
+    color: rgba(0,0,0,0.35);
     font-size: 11px;
     letter-spacing: 0.1em;
     margin-bottom: 24px;
@@ -158,7 +158,7 @@
     overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    background: #111;
+    background: #f5f0e8;
     z-index: 10;
   }
   .chat-area::-webkit-scrollbar { display: none; }
@@ -204,10 +204,10 @@
     bottom: 0; left: 0; right: 0;
     padding: 10px 12px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
-    background: rgba(17,17,17,0.97);
+    background: rgba(245,240,232,0.97);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid rgba(255,255,255,0.07);
+    border-top: 1px solid rgba(0,0,0,0.08);
     display: flex; align-items: center; justify-content: center; gap: 6px;
     z-index: 50;
     transform: translateY(100%);
@@ -222,17 +222,17 @@
   }
   .answer-input {
     flex: 1; min-width: 0; max-width: 320px;
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.06);
+    border: 1px solid rgba(0,0,0,0.12);
     border-radius: 24px;
     padding: 10px 16px;
-    color: #fff;
+    color: #222;
     font-family: "Noto Sans JP", sans-serif;
     font-size: 14px; outline: none; user-select: text;
     -webkit-appearance: none;
     transition: border-color 0.2s;
   }
-  .answer-input::placeholder { color: rgba(255,255,255,0.3); }
+  .answer-input::placeholder { color: rgba(0,0,0,0.3); }
   .answer-input:focus { border-color: rgb(250,199,202); }
   .icon-btn {
     width: 40px; height: 40px; border-radius: 50%; border: none;
@@ -243,7 +243,7 @@
   }
   .icon-btn:active { transform: scale(0.9); opacity: 0.7; }
   .send-btn  { background: rgb(250,199,202); }
-  .share-btn { background: rgba(255,255,255,0.1); }
+  .share-btn { background: rgba(0,0,0,0.08); }
   /* 次の質問ボタン */
   .next-btn-wrap {
     position: absolute;
@@ -253,9 +253,9 @@
     transform: scale(0.85) translateY(-4px);
     transition: opacity 0.4s ease, transform 0.4s ease;
     pointer-events: none;
-    /* ★ カードより上のz-indexで波紋がカードに隠れない */
     z-index: 100;
     -webkit-tap-highlight-color: transparent;
+    border-radius: 50%;
   }
   .next-btn-wrap.visible {
     opacity: 1;
@@ -263,8 +263,8 @@
     pointer-events: auto;
   }
   /* 波紋: box-shadow で広がる */
-  .next-ripple { display: none; }
-  .next-ripple2 { display: none; }
+  .next-ripple { display: none; border-radius: 50%; }
+  .next-ripple2 { display: none; border-radius: 50%; }
   @keyframes rippleOut {
     0%   { box-shadow: 0 0 0 0 rgba(250,199,202,1); }
     100% { box-shadow: 0 0 0 40px rgba(250,199,202,0); }
@@ -279,19 +279,19 @@
   }
   .next-btn {
     position: relative;
-    height: 30px;
-    padding: 0 12px;
-    border-radius: 20px;
-    background: rgba(255,255,255,0.12);
-    border: 1.5px solid rgba(255,255,255,0.25);
+    width: 40px; height: 40px;
+    padding: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+    border: 1.5px solid rgba(26,47,94,0.35);
     backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    font-family: "Noto Sans JP", sans-serif;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: rgba(255,255,255,0.85);
+    font-family: "Cormorant Garamond", "Noto Sans JP", serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: rgba(26,47,94,0.7);
     white-space: nowrap;
     transition: background 0.2s;
     -webkit-tap-highlight-color: transparent;
@@ -340,7 +340,7 @@
 </style>
 </head>
 <body>
-<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(255,255,255,0.25);z-index:999;letter-spacing:0.05em;">ver.47</div>
+<div style="position:fixed;top:10px;left:12px;font-size:10px;color:rgba(0,0,0,0.25);z-index:999;letter-spacing:0.05em;">ver.49</div>
 
 <div class="main" id="main">
   <div class="card-section" id="cardSection">
